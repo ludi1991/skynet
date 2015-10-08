@@ -15,41 +15,17 @@ local request = host:attach(sproto.new(proto.c2s))
 local fd = assert(socket.connect("127.0.0.1", 8888))
 
 local function send_package(fd, pack)
+        print ("ludi pack is "..pack)
 	local package = string.pack(">s2", pack)
-    function mypack(str)
-        local size = #str
-        local a = size % 256
-        size = math.floor(size / 256)
-        local b = size 
-        return string.char(b)..string.char(a)..str
-    end
-    local package2 = mypack(pack)
-    
-    print ("aaaa"..package2:byte(1).." "..package2:byte(2))
-    print ("bbbb"..package:byte(1).." "..package:byte(2))
-	socket.send(fd, package2)
+        print ("ludi package is "..package)
+	socket.send(fd, package)
 end
-
-function printbyte(str)
-
-    local out = ""
-    for i=1,#str do
-        out = out.."-"..str:byte(i)
-    end
-    print (out)
-end
-
-
 
 local function unpack_package(text)
-	
-    
 	local size = #text
 	if size < 2 then
 		return nil, text
 	end
-
-	
 	local s = text:byte(1) * 256 + text:byte(2)
 	if size < s+2 then
 		return nil, text
@@ -119,9 +95,7 @@ local function dispatch_package()
 		if not v then
 			break
 		end
-		if v ~= nil then
-        	print (printbyte(v))
-        end
+
 		print_package(host:dispatch(v))
 	end
 end
