@@ -123,47 +123,21 @@ function REQUEST:login()
 	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
 	player.basic = res[1]
 
-
-	-- sqlstr = "SELECT itemid,itemtype,itemextra,itemcount FROM L2.item where playerid = "..player.playerid;
-	-- local items = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-	-- player.items = items
-
 	sqlstr = "SELECT data FROM L2.item_b where playerid = "..player.playerid;
 	local items = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-    print ("eeeee"..items[1].data)
     _,player.items = pcall(load("return "..items[1].data))
-    print ("eeee"..dump(player.items))
 
-	sqlstr = "SELECT * FROM L2.soul where playerid = "..player.playerid;
+	sqlstr = "SELECT data FROM L2.soul_b where playerid = "..player.playerid;
 	local souls = skynet.call("MYSQL_SERVICE","lua","query",sqlstr);
+	_,player.souls = pcall(load("return "..souls[1].data))
     
-    player.souls = {}
-    for i,v in pairs(souls) do
-        local temp = {}
-        temp.soulid = i
-        temp.itemids = {}
-        for k = 1,12 do
-
-        	local str = "pos"..k.."_itemid"
-        	if v[str] ~= nil then
-        		temp.itemids[k] = v[str]
-        	else
-        		temp.itemids[k] = -1
-        	end
-        end
-
-        player.souls[i] = temp  	
-    end
-
-    print (dump(player.souls))
-
+    sqlstr = "SELECT data FROM L2.task_b where playerid = "..player.playerid;
+    local tasks = skynet.call("MYSQL_SERVICE","lua","query",sqlstr);
+    _,player.souls = pcall(load("return "..tasks[1].data))
     print ("player "..player.playerid.."is initalized!")
 
     -- finish task test
     
-
-
-
 	return { result = 1 }
 end
 
@@ -203,6 +177,10 @@ function REQUEST:pass_level()
 	end
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
+        send_package(send_request("update_task",{
+			task = { taskid = 0,type = 0,description = "pass level 1",percent = 100}
+		}
+		))
     end
 
 	print(dump(player.items))
@@ -250,7 +228,7 @@ function REQUEST:create_new_player()
     player.items = {}
     player.souls = {}
     player.tasks = {
-            { taskid = 0,type = 0,description = "first task",percent = 0},
+            { taskid = 0,type = 0,description = "pass level 1",percent = 0},
             { taskid = 1,type = 1,description = "2 task",percent = 0},
             { taskid = 2,type = 2,description = "3 task",percent = 0},
             { taskid = 3,type = 3,description = "4 task",percent = 0},
@@ -288,8 +266,14 @@ local function save_to_db()
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
 	    local soulstr = dump(player.souls,true)
-	    str = "INSERT INTO L2.item_b (playerid,data) values ('"..player.basic.playerid.."','"..soulstr.."');"
+	    str = "INSERT INTO L2.soul_b (playerid,data) values ('"..player.basic.playerid.."','"..soulstr.."');"
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+
+	    local taskstr = dump(player.tasks,true)
+	    str = "INSERT INTO L2.task_b (playerid,data) values ('"..player.basic.playerid.."','"..taskstr.."');"
+	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+
+
 
     else
     	print ("the player is exist,update mysql")
@@ -300,10 +284,25 @@ local function save_to_db()
         tmp = string.sub(tmp,0,string.len(tmp)-1)
     	local str = "UPDATE L2.player_basic set "..tmp.."where playerid =".. player.basic.playerid
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+
+	    local function get_data_from_mysql(player_table,mysql_table)
+	    	local thestr = dump(player[player_table],true)
+	        str = "UPDATE L2."..mysql_table.." SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
+	        local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+	    end
+
+
+	    get_data_from_mysql("items","item_b")
+	    get_data_from_mysql("souls","soul_b")
+	    get_data_from_mysql("tasks","task_b")
 	
-	    local itemstr = dump(player.items,true)
-	    str = "UPDATE L2.item_b SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+	    -- local itemstr = dump(player.items,true)
+	    -- str = "UPDATE L2.item_b SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
+	    -- local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+
+	    -- local soulstr = dump(player.souls,true)
+	    -- str = "UPDATE L2.soul_b SET data = '"..soulstr.."' where playerid ="..player.basic.playerid;
+	    -- local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
     end
  

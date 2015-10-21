@@ -216,6 +216,15 @@ get_server_time 19 {
     }
 }
 
+#领取奖励
+get_task_reward 20 {
+    response {
+        gold 0 : integer
+        diamond 1 : integer
+        items 2: *item
+    }
+}
+
 ]]
 
 proto.s2c = sprotoparser.parse [[
