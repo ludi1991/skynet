@@ -254,7 +254,7 @@ local function save_to_db()
 
 	    local function get_data_from_mysql(player_table,mysql_table)
 	    	local thestr = dump(player[player_table],true)
-	        str = "UPDATE L2."..mysql_table.." SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
+	        str = "UPDATE L2."..mysql_table.." SET data = '"..thestr.."' where playerid = "..player.basic.playerid;
 	        local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 	    end
 
