@@ -164,7 +164,7 @@ function REQUEST:set_cursoul()
 end
 
 function REQUEST:get_server_time()
-	return { time = os.date("%Y-%m-%M %X") }
+	return { time = os.date("%Y-%m-%d %X") }
 end
 
 
@@ -280,9 +280,9 @@ function REQUEST:create_new_player()
         nickname = self.nickname..math.random(100000),
         diamond = 0,
         gold = 0,
-        create_time = os.date("%Y-%m-%M %X"),
+        create_time = os.date("%Y-%m-%d %X"),
         level = 1,
-        last_login_time = os.date("%Y-%m-%M %X"),
+        last_login_time = os.date("%Y-%m-%d %X"),
         cursoul = 1,
     }
 
