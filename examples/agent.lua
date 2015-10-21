@@ -177,10 +177,10 @@ function REQUEST:pass_level()
 	end
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
-        send_package(send_request("update_task",{
-			task = { taskid = 0,type = 0,description = "pass level 1",percent = 100}
-		}
-		))
+  --       send_package(send_request("update_task",{
+		-- 	task = { taskid = 0,type = 0,description = "pass level 1",percent = 100}
+		-- }
+		-- ))
     end
 
 	print(dump(player.items))
@@ -204,40 +204,7 @@ function REQUEST:get_tasks()
 	}
 end
 
-function REQUEST:create_new_player()
 
-    player = {}
-
-
-    local sqlstr = "SELECT playerid FROM L2.player_basic order by playerid desc limit 1"
-	local newplayerid = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)[1].playerid + 1
-	
-    player.basic = {
-        playerid = newplayerid,
-        nickname = self.nickname..math.random(100000),
-        diamond = 0,
-        gold = 0,
-        create_time = os.date("%Y-%m-%M %X"),
-        level = 1,
-        last_login_time = os.date("%Y-%m-%M %X"),
-        cursoul = 1,
-    }
-
-    print (os.date())
-
-    player.items = {}
-    player.souls = {}
-    player.tasks = {
-            { taskid = 0,type = 0,description = "pass level 1",percent = 0},
-            { taskid = 1,type = 1,description = "2 task",percent = 0},
-            { taskid = 2,type = 2,description = "3 task",percent = 0},
-            { taskid = 3,type = 3,description = "4 task",percent = 0},
-            { taskid = 4,type = 4,description = "5 task",percent = 0},
-            { taskid = 5,type = 5,description = "6 task",percent = 0},
-    	} 
-
-    return { result = 1 , playerid = newplayerid }
-end
 
 --落地数据到数据库
 local function save_to_db()
@@ -296,17 +263,48 @@ local function save_to_db()
 	    get_data_from_mysql("souls","soul_b")
 	    get_data_from_mysql("tasks","task_b")
 	
-	    -- local itemstr = dump(player.items,true)
-	    -- str = "UPDATE L2.item_b SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
-	    -- local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-	    -- local soulstr = dump(player.souls,true)
-	    -- str = "UPDATE L2.soul_b SET data = '"..soulstr.."' where playerid ="..player.basic.playerid;
-	    -- local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
     end
  
 end
+
+function REQUEST:create_new_player()
+
+    player = {}
+
+
+    local sqlstr = "SELECT playerid FROM L2.player_basic order by playerid desc limit 1"
+	local newplayerid = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)[1].playerid + 1
+	
+    player.basic = {
+        playerid = newplayerid,
+        nickname = self.nickname..math.random(100000),
+        diamond = 0,
+        gold = 0,
+        create_time = os.date("%Y-%m-%M %X"),
+        level = 1,
+        last_login_time = os.date("%Y-%m-%M %X"),
+        cursoul = 1,
+    }
+
+    print (os.date())
+
+    player.items = {}
+    player.souls = {}
+    player.tasks = {
+            { taskid = 0,type = 0,description = "pass level 1",percent = 0},
+            { taskid = 1,type = 1,description = "2 task",percent = 0},
+            { taskid = 2,type = 2,description = "3 task",percent = 0},
+            { taskid = 3,type = 3,description = "4 task",percent = 0},
+            { taskid = 4,type = 4,description = "5 task",percent = 0},
+            { taskid = 5,type = 5,description = "6 task",percent = 0},
+    	} 
+    
+    save_to_db()
+    return { result = 1 , playerid = newplayerid }
+
+   
+end
+
 
 
 function REQUEST:quit()
