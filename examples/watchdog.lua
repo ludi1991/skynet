@@ -10,7 +10,7 @@ function SOCKET.open(fd, addr)
 	skynet.error("New client from : " .. addr)
 	agent[fd] = skynet.newservice("agent")
 	skynet.call(agent[fd], "lua", "start", { gate = gate, client = fd, watchdog = skynet.self() })
-	skynet.call("CHATROOM","lua","login",agent[fd])
+--	skynet.call("CHATROOM","lua","login",agent[fd])
 end
 
 local function close_agent(fd)

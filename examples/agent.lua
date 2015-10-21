@@ -119,7 +119,7 @@ function REQUEST:login()
    --  last_login_time 5 : string
    --  create_time 6 : string
 
-	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time FROM L2.player_basic where playerid = "..player.playerid;
+	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time,cursoul FROM L2.player_basic where playerid = "..player.playerid;
 	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
 	player.basic = res[1]
 
@@ -160,13 +160,7 @@ function REQUEST:login()
     print ("player "..player.playerid.."is initalized!")
 
     -- finish task test
-    skynet.fork(function()
-		while true do
-			print "send heartbeat"
-			send_package(send_request("task",{name = themsg.name ,msg = themsg.msg,time = os.date()}))
-			skynet.sleep(1000)
-		end
-	end)
+    
 
 
 
@@ -188,6 +182,15 @@ end
 
 function REQUEST:set_player_basic()
 	return { result = 1}
+end
+
+function REQUEST:set_cursoul()
+	player.basic.cursoul = self.soulid
+	return { result = 1 } 
+end
+
+function REQUEST:get_server_time()
+	return { time = os.date("%Y-%m-%M %X") }
 end
 
 
@@ -234,7 +237,6 @@ function REQUEST:create_new_player()
     player.basic = {
         playerid = newplayerid,
         nickname = self.nickname..math.random(100000),
-        vip = 0,
         diamond = 0,
         gold = 0,
         create_time = os.date("%Y-%m-%M %X"),
@@ -266,19 +268,27 @@ local function save_to_db()
 
     if #theres == 0 then
     	print ("first save this player !!")
-	    	-- save basic to mysql
-	    local str = "INSERT INTO `L2`.`player_basic` (`playerid`, `level`, `vip`, `gold`, `diamond`, `nickname`, `last_login_time`, `create_time`)" 
-	                .."VALUES ( '$playerid', '$level', '$vip', '$gold', '$diamond', '$nickname', '$last_login_time', '$create_time');"
-	    local sqlstr = string.gsub(str,"%$([%w_]+)",player.basic)
-	  
+	    local name_str = ""
+	    local value_str = ""
+	    for i,v in pairs(player.basic) do
+            name_str = name_str.."`"..i.."`,"
+            value_str = value_str.."'"..v.."',"
+	    end
+	    name_str = string.sub(name_str,0,string.len(name_str)-1)
+	    value_str = string.sub(value_str,0,string.len(value_str)-1)
+	    local sqlstr = "INSERT INTO L2.player_basic ("..name_str..") VALUES ("..value_str..");"
+
+	    print ("ludiludi sqlstr"..sqlstr)
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
 
 	    
 	    -- save itemdata to mysql
 	    local itemstr = dump(player.items,true)
-	   -- str = "UPDATE L2.item_b SET data = '"..itemstr.."' where playerid = "..player.basic.playerid;
 	    str = "INSERT INTO L2.item_b (playerid,data) values ('"..player.basic.playerid.."','"..itemstr.."');"
-	   
+	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
+
+	    local soulstr = dump(player.souls,true)
+	    str = "INSERT INTO L2.item_b (playerid,data) values ('"..player.basic.playerid.."','"..soulstr.."');"
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
     else
@@ -296,11 +306,8 @@ local function save_to_db()
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
     end
-
-   
-    
+ 
 end
-
 
 
 function REQUEST:quit()
@@ -363,11 +370,28 @@ function CMD.start(conf)
 	-- slot 1,2 set at main.lua
 	host = sprotoloader.load(1):host "package"
 	send_request = host:attach(sprotoloader.load(2))
+
 	skynet.fork(function()
 		while true do
 			print "send heartbeat"
 			send_package(send_request "heartbeat")
 			skynet.sleep(500)
+		end
+	end)
+
+	skynet.fork(function()
+		while true do
+			print "update_task"
+			send_package(send_request("update_task",{
+			    task = { taskid = 0,type = 0,description = "first task",percent = 100}
+			}
+			))
+
+			-- send_package(send_request("update_task",{
+			--     task = 123
+			-- }
+			-- ))
+			skynet.sleep(1000)
 		end
 	end)
 
@@ -378,7 +402,8 @@ end
 
 function CMD.disconnect()
 	-- todo: do something before exit
-    skynet.send("CHATROOM","lua","logout",skynet.self())
+    --skynet.send("CHATROOM","lua","logout",skynet.self())
+    save_to_db()
 	skynet.exit()
 end
 

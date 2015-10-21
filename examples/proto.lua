@@ -23,6 +23,7 @@ proto.c2s = sprotoparser.parse [[
     nickname 4 : string     #昵称
     last_login_time 5 : string    #上次登录时间
     create_time 6 : string        #创建时间
+    cursoul 7 : integer #当前使用的魂
 }
 
 .rankdata {       #排名信息
@@ -35,6 +36,7 @@ proto.c2s = sprotoparser.parse [[
 .soul {            #魂的信息
     soulid 0: integer      #魂的id(1~12)
     itemids 1: *integer    #魂的每个部位对应装备id
+    soul_girl_id 2 :integer  #魂的武器娘id
 }
 
 handshake 1 {
@@ -194,6 +196,23 @@ create_new_player 17 {
     response {
         result 0 : integer #1成功0失败
         playerid 1 : integer
+    }
+}
+
+#设置当前灵魂
+set_cursoul 18 {
+    request {
+        soulid 0 : integer #灵魂的id
+    }
+    response {
+        result 1 :integer   #1成功0失败
+    }
+}
+
+#获取当前服务器时间
+get_server_time 19 {
+    response {
+        time 0 : string #服务器时间,格式  "2015-10-23 19:20:39"
     }
 }
 
