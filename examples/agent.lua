@@ -146,7 +146,7 @@ function REQUEST:get_player_items()
 	local tmp = {}
 	for _,v in pairs(player.items) do
 		table.insert(tmp,v)
-    end
+        end
 	return { items = tmp }
 end
 
@@ -299,7 +299,7 @@ function REQUEST:create_new_player()
     print (os.date())
 
     player.items = {}
-    player.souls = {}
+    player.souls = { { soulid = 1 , itemids = {} , soul_girl_id = 1} }
     player.tasks = {
             { taskid = 0,type = 0,description = "pass level 1",percent = 0},
             { taskid = 1,type = 1,description = "2 task",percent = 0},
