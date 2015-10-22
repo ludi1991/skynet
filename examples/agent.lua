@@ -133,7 +133,7 @@ function REQUEST:login()
     
     sqlstr = "SELECT data FROM L2.task_b where playerid = "..player.playerid;
     local tasks = skynet.call("MYSQL_SERVICE","lua","query",sqlstr);
-    _,player.souls = pcall(load("return "..tasks[1].data))
+    _,player.tasks = pcall(load("return "..tasks[1].data))
     print ("player "..player.playerid.."is initalized!")
 
     -- finish task test
