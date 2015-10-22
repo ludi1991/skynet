@@ -261,8 +261,51 @@ set_cur_stayin_level 24 {
     response {
         result 0 : integer #1成功0失败
     }
-
 }
+
+strengthen_item 25 {
+    request {
+        gold 0 : integer
+        item 1 : item
+    }   
+    response {
+        result 0 : integer #1成功 0nomoney 2noitem
+    }    
+}
+
+upgrade_item 26 {
+    request {
+        stone 0 : integer
+        item 1 : integer
+    }
+    response {
+        result 0 :integer #1success 0nostone 2noitem
+    }
+}
+
+melt_item 27 {
+    request {
+        itemids 0 : *integer 
+        newitem 1 : item
+        stone 2 : integer
+    }
+    response {
+        result 0 :integer #1success 0noitem
+    }
+}
+
+sell_item 28 {
+    request {
+        itemids 0 : *integer
+        gold 1 : *integer
+    }
+    response {
+        result 0: integer #1success 0noitem
+    }
+}
+
+
+
 ]]
 
 proto.s2c = sprotoparser.parse [[

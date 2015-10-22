@@ -240,6 +240,48 @@ function REQUEST:set_cur_stayin_level()
     return { result = 1}
 end
 
+function REQUEST:strengthen_item()
+    if player.basic.gold < self.gold then
+    	return { result = 0}
+    elseif player.items[self.item.itemid] == nil then
+    	return { result = 2}
+    else
+    	player.basic.gold = player.basic.gold - self.gold
+    	player.items[self.item.itemid] = self.item
+    	return { result = 1}
+    end
+end
+
+function REQUEST:upgrade_item()
+	if player.items[1000001] ~= nil then
+		local stonecount = player.items[1000001].itemcount
+		if stonecount < self.stone then
+			return { result = 0}
+		elseif player.items[self.item.itemid] == nil then
+			return { retult = 2}
+		else 
+			player.items[1000001].itemcount = stonecount - self.stone
+		    player.items[self.item.itemid] = self.item
+		    return { result = 1}
+		end
+	end 
+end
+
+function REQUEST:melt_item()
+	local res = true
+	for i,v in pairs(self.itemids) do
+        if player.items[v] == nil then
+        	return { result = 0 }
+        end
+	end
+	return { result = 1}
+end
+
+function REQUEST:sell_item()
+	return { result = 1}
+end
+
+
 
 --落地数据到数据库
 local function save_to_db()
@@ -324,7 +366,7 @@ function REQUEST:create_new_player()
 
     print (os.date())
 
-    player.items = {}
+    player.items = { }
     player.souls = { { soulid = 1 , itemids = {} , soul_girl_id = 1} }
     player.tasks = {
             { taskid = 0,type = 0,description = "pass level 1",percent = 0},
