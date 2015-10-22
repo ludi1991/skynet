@@ -144,7 +144,7 @@ end
 
 function REQUEST:get_player_items()
 	local tmp = {}
-	for _,v in pairs(player.items)
+	for _,v in pairs(player.items) do
 		table.insert(tmp,v)
     end
 	return { items = tmp }
