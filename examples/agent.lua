@@ -172,8 +172,14 @@ end
 function REQUEST:pass_level()
 	player.basic.gold = player.basic.gold + self.gold
 	player.basic.diamond = player.basic.diamond + self.diamond
-	for _,v in pairs(self.items) do
-		table.insert(player.items,v)
+    
+    --print("lujiajun "..dump(self.items))
+    
+    if self.items ~= nil then
+		for _,v in pairs(self.items) do
+			player.items[v.itemid] = v
+			--table.insert(player.items,v)
+		end
 	end
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
@@ -400,6 +406,7 @@ end
 function CMD.disconnect()
 	-- todo: do something before exit
     --skynet.send("CHATROOM","lua","logout",skynet.self())
+    player.basic.last_login_time = os.date("%Y-%m-%d %X")
     save_to_db()
 	skynet.exit()
 end
