@@ -24,6 +24,7 @@ proto.c2s = sprotoparser.parse [[
     last_login_time 5 : string    #上次登录时间
     create_time 6 : string        #创建时间
     cursoul 7 : integer #当前使用的魂
+    cur_stayin_level 8 : integer #当前挂机关卡
 }
 
 .rankdata {       #排名信息
@@ -222,6 +223,34 @@ get_task_reward 20 {
         gold 0 : integer
         diamond 1 : integer
         items 2: *item
+    }
+}
+
+
+set_gold 21 {
+    request {
+        gold 0 : integer
+    }
+    response {
+        result 0 : integer #1成功0失败
+    }
+}
+
+set_diamond 22 {
+    request {
+        diamond 0 : integer
+    }
+    response {
+        result 0 : integer #1成功0失败
+    }
+}
+
+delete_item 23 {
+    request {
+        itemid 0 : integer
+    }
+    response {
+        result 0 : integer #1成功0失败
     }
 }
 

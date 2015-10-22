@@ -119,7 +119,7 @@ function REQUEST:login()
    --  last_login_time 5 : string
    --  create_time 6 : string
 
-	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time,cursoul FROM L2.player_basic where playerid = "..player.playerid;
+	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time,cursoul,cur_stayin_level FROM L2.player_basic where playerid = "..player.playerid;
 	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
 	player.basic = res[1]
 
@@ -214,6 +214,27 @@ function REQUEST:get_tasks()
 	}
 end
 
+function REQUEST:set_gold()
+	print ("set_gold "..self.gold)
+	player.basic.gold = self.gold
+	return { result =1}
+end
+
+function REQUEST:set_diamond()
+	print ("set_diamond "..self.diamond)
+    player.basic.diamond = self.diamond
+    return { result = 1}
+end
+
+function REQUEST:delete_item()
+	if player.items[self.itemid] ~= nil then
+		player.items[self.itemid] = nil
+	else
+		print "delete item failed -- no item"
+	end
+	return { result = 1 }
+end
+
 
 
 --落地数据到数据库
@@ -294,6 +315,7 @@ function REQUEST:create_new_player()
         level = 1,
         last_login_time = os.date("%Y-%m-%d %X"),
         cursoul = 1,
+        cur_stayin_level = 1,
     }
 
     print (os.date())
