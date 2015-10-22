@@ -143,7 +143,11 @@ end
 
 
 function REQUEST:get_player_items()
-	return { items = player.items }
+	local tmp = {}
+	for _,v in pairs(player.items)
+		table.insert(tmp,v)
+    end
+	return { items = tmp }
 end
 
 function REQUEST:get_rank_data()
