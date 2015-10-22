@@ -254,6 +254,15 @@ delete_item 23 {
     }
 }
 
+set_cur_stayin_level 24 {
+    request {
+        level 0 : integer
+    }
+    response {
+        result 0 : integer #1成功0失败
+    }
+
+}
 ]]
 
 proto.s2c = sprotoparser.parse [[

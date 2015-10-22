@@ -235,6 +235,10 @@ function REQUEST:delete_item()
 	return { result = 1 }
 end
 
+function REQUEST:set_cur_stayin_level()
+    player.basic.cur_stayin_level = self.level
+    return { result = 1}
+end
 
 
 --落地数据到数据库
