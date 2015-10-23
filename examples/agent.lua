@@ -63,6 +63,115 @@ local function dump(obj,oneline)
 end
 
 
+local function have_enough_gold(value)
+	return player.basic ~= nil and player.basic.gold - value >= 0
+end
+
+local function have_enough_diamond(value)
+	return player.basic ~= nil and player.basic.diamond - value >= 0
+end
+
+local function have_enough_stone(value)
+	return player.items ~= nil and 
+	       player.items[1000001] ~= nil and
+	       player.items[1000001].itemcount - value >= 0
+end
+
+local function have_item(itemid)
+	return player.items ~= nil and player.items[itemid] ~= nil
+end
+
+-- 增加或减少金币
+local function add_gold(value)
+	if player.basic == nil then
+		print ("add_gold : player basic not exist")
+		return false
+	else
+		if player.basic.gold + value < 0 then
+		    print ("not enough gold")
+		    return false
+		else 
+            player.basic.gold = player.basic.gold + value
+		    return true
+        end
+    end
+end
+
+--增加或减少钻石
+local function add_diamond(value)
+	if player.basic == nil then
+		print ("add_diamond : player basic not exist")
+		return false
+	else
+		if player.basic.diamond + value < 0 then
+		    print ("not enough gold")
+		    return false
+		else 
+            player.basic.diamond = player.basic.diamond + value
+		    return true
+        end
+    end
+end
+
+--增加或减少强化石
+local function add_stone(value)
+	if player.items == nil then
+		print ("player item not exist")
+		return false
+	else
+	    if player.items[1000001] == nil then
+	    	player.items[1000001] = { itemid = 1000001 ,
+	    	                          itemtype = 1000001,
+	    	                          itemextra = 0,
+	    	                          itemcount = value}
+	    else
+	    	player.items[1000001].itemcount = player.items[1000001].itemcount + value
+	    end
+	    return true
+	end
+end
+
+--删除物品
+local function remove_item(itemid,count)
+	if player.items[itemid] ~= nil then
+        if count == nil then
+        	player.items[itemid] = nil
+        else
+        	player.items[itemid].itemcount = player.items[itemid].itemcount - count
+        	if player.items[itemid].itemcount <= 0 then
+        		player.items[itemid] = nil
+        	end
+        end
+        return true
+    end
+    print ("remove_item failed")
+    return false
+end
+
+local function add_item(item)
+	if player.items[itemid] ~= nil then
+		if have_item(item.itemid) then
+			player.item[item.itemid].itemcount = player.item[item.itemid].itemcount + item.itemcount
+		else
+			player.item[item.itemid] = item
+		end
+		return true
+	end
+	print ("add_item failed")
+	return false
+end
+
+local function update_item(item)
+	if have_item(item.itemid) == false then
+		print ("update_item failed")
+		return false
+	end
+	player.item[item.itemid].itemtype = item.itemtype
+	player.item[item.itemid].itemextra = item.itemextra
+	return true
+
+end
+
 
 
 
@@ -171,12 +280,9 @@ function REQUEST:get_server_time()
 	return { time = os.date("%Y-%m-%d %X") }
 end
 
-
-
-function REQUEST:pass_level()
-	player.basic.gold = player.basic.gold + self.gold
-	player.basic.diamond = player.basic.diamond + self.diamond
-    
+function REQUEST:pass_boss_level()
+	add_gold(self.gold)
+	add_diamond(self.diamond)
     --print("lujiajun "..dump(self.items))
     
     if self.items ~= nil then
@@ -187,17 +293,48 @@ function REQUEST:pass_level()
 	end
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
-  --       send_package(send_request("update_task",{
-		-- 	task = { taskid = 0,type = 0,description = "pass level 1",percent = 100}
-		-- }
-		-- ))
     end
 
-	print(dump(player.items))
+	return { result = 1 }
+end
+
+
+
+function REQUEST:pass_level()
+	add_gold(self.gold)
+	add_diamond(self.diamond)
+    
+    if self.items ~= nil then
+		for _,v in pairs(self.items) do
+			player.items[v.itemid] = v
+			--table.insert(player.items,v)
+		end
+	end
+
 	return { result = 1 }
 end
 
 function REQUEST:set_player_soul()
+ --    local function exist_soul(soulid)
+ --        for i,v in pairs(player.souls) do
+ --        	if v.soulid == soulid then
+ --        		return true,i
+ --        	end
+ --        end
+ --        return false,nil
+ --    end
+    
+
+	-- for i,v in pairs(self.souls) do
+	-- 	local exist,id = exist_soul(v.soulid)
+	-- 	if exist then
+	-- 		player.souls[id] = v
+	-- 	else 
+	-- 		player.souls[v.soulid] = v 
+	-- end
+	for i,v in pairs(self.souls) do
+		player.souls[v.soulid] = v
+	end
 	return { result = 1}
 end
 
@@ -214,26 +351,7 @@ function REQUEST:get_tasks()
 	}
 end
 
-function REQUEST:set_gold()
-	print ("set_gold "..self.gold)
-	player.basic.gold = self.gold
-	return { result =1}
-end
 
-function REQUEST:set_diamond()
-	print ("set_diamond "..self.diamond)
-    player.basic.diamond = self.diamond
-    return { result = 1}
-end
-
-function REQUEST:delete_item()
-	if player.items[self.itemid] ~= nil then
-		player.items[self.itemid] = nil
-	else
-		print "delete item failed -- no item"
-	end
-	return { result = 1 }
-end
 
 function REQUEST:set_cur_stayin_level()
     player.basic.cur_stayin_level = self.level
@@ -241,44 +359,62 @@ function REQUEST:set_cur_stayin_level()
 end
 
 function REQUEST:strengthen_item()
-    if player.basic.gold < self.gold then
-    	return { result = 0}
-    elseif player.items[self.item.itemid] == nil then
-    	return { result = 2}
-    else
-    	player.basic.gold = player.basic.gold - self.gold
-    	player.items[self.item.itemid] = self.item
-    	return { result = 1}
+    if have_enough_gold(self.gold) and have_enough_stone(self.stone) and 
+       have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
+
+       add_gold(-self.gold)
+       add_diamond(-self.diamond)
+       add_stone(-self.stone)
+       update_item(self.item)
+
+       return { result = 1}
     end
+
+    return { result = 0 }
+
+
 end
 
 function REQUEST:upgrade_item()
-	if player.items[1000001] ~= nil then
-		local stonecount = player.items[1000001].itemcount
-		if stonecount < self.stone then
-			return { result = 0}
-		elseif player.items[self.item.itemid] == nil then
-			return { retult = 2}
-		else 
-			player.items[1000001].itemcount = stonecount - self.stone
-		    player.items[self.item.itemid] = self.item
-		    return { result = 1}
-		end
-	end 
+	if have_enough_gold(self.gold) and have_enough_diamond(self.diamond) 
+	   and have_item(self.item.itemid) then
+
+	   add_gold(-self.gold)
+	   add_diamond(-self.diamond)
+	   upgrade_item(self.item)
+
+	   return { result = 1}
+	end
+
+	return { result = 0}
 end
 
 function REQUEST:melt_item()
-	local res = true
-	for i,v in pairs(self.itemids) do
-        if player.items[v] == nil then
-        	return { result = 0 }
-        end
+	for _,id in pairs(self.itemids) do
+		if have_item(id) == false then return { result = 0} end
 	end
-	return { result = 1}
+    
+    for _,id in pairs(self.itemids) do
+    	remove_item(id)
+    end
+    
+    add_item(self.newitem)
+    add_stone(self.stone)
+    
+    return { result = 1 }
+
 end
 
 function REQUEST:sell_item()
-	return { result = 1}
+	for _,id in pairs(self.itemids) do
+		if have_item(id) == false then return { result = 0 } end
+	end
+    
+    for _,id in pairs(self.itemids) do
+    	remove_item(id)
+    end
+
+	add_gold(self.gold)
 end
 
 
@@ -367,7 +503,7 @@ function REQUEST:create_new_player()
     print (os.date())
 
     player.items = { }
-    player.souls = { { soulid = 1 , itemids = {} , soul_girl_id = 1} }
+    player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
     player.tasks = {
             { taskid = 0,type = 0,description = "pass level 1",percent = 0},
             { taskid = 1,type = 1,description = "2 task",percent = 0},

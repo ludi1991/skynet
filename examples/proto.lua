@@ -226,33 +226,18 @@ get_task_reward 20 {
     }
 }
 
-
-set_gold 21 {
+pass_boss_level 21 {
     request {
-        gold 0 : integer
+        level 0 : integer  #第几关
+        items 1 : *item
+        gold 2 : integer
+        diamond 3 :integer
     }
     response {
-        result 0 : integer #1成功0失败
+        result 0 : integer
     }
 }
 
-set_diamond 22 {
-    request {
-        diamond 0 : integer
-    }
-    response {
-        result 0 : integer #1成功0失败
-    }
-}
-
-delete_item 23 {
-    request {
-        itemid 0 : integer
-    }
-    response {
-        result 0 : integer #1成功0失败
-    }
-}
 
 set_cur_stayin_level 24 {
     request {
