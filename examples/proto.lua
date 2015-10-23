@@ -266,7 +266,9 @@ set_cur_stayin_level 24 {
 strengthen_item 25 {
     request {
         gold 0 : integer
-        item 1 : item
+        diamond 1 : integer
+        stone 2 : integer
+        item 3 : item
     }   
     response {
         result 0 : integer #1成功 0nomoney 2noitem
@@ -275,8 +277,9 @@ strengthen_item 25 {
 
 upgrade_item 26 {
     request {
-        stone 0 : integer
-        item 1 : integer
+        gold 0 : integer
+        diamond 1 : integer
+        item 2 : item
     }
     response {
         result 0 :integer #1success 0nostone 2noitem
