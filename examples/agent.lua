@@ -381,7 +381,7 @@ function REQUEST:upgrade_item()
 
 	   add_gold(-self.gold)
 	   add_diamond(-self.diamond)
-	   upgrade_item(self.item)
+	   update_item(self.item)
 
 	   return { result = 1}
 	end
