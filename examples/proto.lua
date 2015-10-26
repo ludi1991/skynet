@@ -30,7 +30,7 @@ proto.c2s = sprotoparser.parse [[
 .rankdata {       #排名信息
     playerid 0 : integer      #玩家角色id        
     name 1 : string           #玩家昵称
-    rank 2 : string           #玩家等级
+    rank 2 : integer           #玩家排名
     score 3 : integer         #分数
 }
 
@@ -91,9 +91,6 @@ get_player_basic 7 {   #获取玩家基本数据
 
 #获取玩家排名
 get_player_rank 8{     
-    request {
-        playerid 0: integer    #玩家角色id
-    }
     response {
         rank 0: integer       #排名
     }

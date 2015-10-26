@@ -18,7 +18,8 @@ function command.PROC(func,...)
     print "proc"
     print (func)
     print (...)
-    return db[func](db,...)
+    local res = db[func](db,...)
+    return res
    -- return db:zadd(...)
   --  return db[func](self,...)
 end
