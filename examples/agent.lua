@@ -14,6 +14,13 @@ local client_fd
 
 local player = {}
 
+function string:split(sep)
+	local sep, fields = sep or "\t", {}
+	local pattern = string.format("([^%s]+)", sep)
+	self:gsub(pattern, function(c) fields[#fields+1] = c end)
+	return fields
+end
+
 -- print lua data
 local function dump(obj,oneline)
     local getIndent, quoteStr, wrapKey, wrapVal, dumpObj
@@ -213,8 +220,11 @@ function REQUEST:get_player_basic()
 end
 
 function REQUEST:get_player_rank()
-
-	return { rank = 5 }
+    print ("get_player_rank")
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zrank","scoreboard",
+		  ""..player.basic.nickname.."|"..player.basic.playerid)
+	
+	return { rank = res or 10000 }
 end
 
 function REQUEST:login()
@@ -262,7 +272,27 @@ function REQUEST:get_player_items()
 end
 
 function REQUEST:get_rank_data()
-	return { data = { { playerid = 1 , name = "aa" , rank = 1 , score = 182 },{ playerid = 2, name = "bb" , rank = 2 , score = 175} }}
+	print "get_rank_data"
+	-- local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",self.fightpower,
+	-- 	  ""..player.basic.nickname.."|"..player.basic.playerid)
+
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zrevrange","scoreboard",self.start-1,
+		  self.start+self.count-2,"withscores")
+
+	print ("aaa"..dump(res))
+	local result = {}
+	for i=1,self.count*2,2 do
+		local tbl = res[i]:split("|")
+	    table.insert(result,
+	    	{ playerid = tonumber(tbl[2]) , 
+	    	  name = tbl[1] , 
+	    	  score = tonumber(res[i+1]) , 
+	    	  rank = math.ceil((i-1)/2)+self.start })
+    end
+
+    return { data = result }
+
+	--return { data = { { playerid = 1 , name = "aa" , rank = 1 , score = 182 },{ playerid = 2, name = "bb" , rank = 2 , score = 175} }}
 end
 
 function REQUEST:get_player_soul()
@@ -320,7 +350,7 @@ function REQUEST:set_fightpower()
 	print "set fightpower~"
 	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",self.fightpower,
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
-	return { result = 1}
+	return { result = 1 }
 end
 
 function REQUEST:set_player_soul()
@@ -523,6 +553,12 @@ function REQUEST:create_new_player()
     	} 
     
     save_to_db()
+
+    -- 战5渣 at first
+    local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",5,
+		  ""..player.basic.nickname.."|"..player.basic.playerid)
+
+
     return { result = 1 , playerid = newplayerid }
 
    
