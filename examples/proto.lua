@@ -238,6 +238,16 @@ pass_boss_level 21 {
     }
 }
 
+set_fightpower 22{
+    request {
+        fightpower 0 : integer
+    }
+    response {
+        result 0 : integer #1success0failed
+    }
+}
+
+
 
 set_cur_stayin_level 24 {
     request {
