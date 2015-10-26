@@ -172,6 +172,10 @@ local function update_item(item)
 
 end
 
+-- 计算战斗力
+local function cal_fightpower()
+	return player.basic.playerid * 3
+end
 
 
 
@@ -209,11 +213,9 @@ function REQUEST:get_player_basic()
 end
 
 function REQUEST:get_player_rank()
+
 	return { rank = 5 }
 end
-
-
-
 
 function REQUEST:login()
 	player.playerid = self.playerid
@@ -312,6 +314,13 @@ function REQUEST:pass_level()
 	end
 
 	return { result = 1 }
+end
+
+function REQUEST:set_fightpower()
+	print "set fightpower~"
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",self.fightpower,
+		  ""..player.basic.nickname.."|"..player.basic.playerid)
+	return { result = 1}
 end
 
 function REQUEST:set_player_soul()
