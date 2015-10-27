@@ -11,7 +11,11 @@ local conf = {
 local command = {}
 local db
 
-local board_name = "scoreboard"
+local redis_single_fp_name = "fp_single_rank"
+local redis_team_fp_name = "fp_team_rank"
+local redis_1v1_name = "1v1_rank"
+local redis_3v3_name = "3v3_rank"
+
 
 
 function command.PROC(func,...)
@@ -48,20 +52,20 @@ skynet.start(function()
         else
             error(string.format("Unknown command %s", tostring(cmd)))
         end
+
     end)
     skynet.register "REDIS_SERVICE"
     
+    --add 1000 robot
     for i=1,1000 do
-        db:zadd(board_name,i,"robot"..i.."|"..i)
+        db:zadd(redis_single_fp_name,i,"robot_s"..i.."|"..i)
+        db:zadd(redis_team_fp_name,i,"robot_t"..i.."|"..i)
+        db:zadd(redis_1v1_name,i,"robot_1"..i.."|"..i)
+        db:zadd(redis_3v3_name,i,"robot_3"..i.."|"..i)
     end
 
-
-
-    db:zadd(board_name,100,"playerid|80")
-    db:zadd(board_name,100,"xiaoge|75")
-    db:zadd(board_name,90,"xiaogege|85")
     
-    print (db:zrange(board_name,0,2))
+    --print (db:zrange(redis_single_fp_name,0,2))
     
     -- db:del "C"
     -- db:set("A", "hello")

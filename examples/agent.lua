@@ -14,6 +14,19 @@ local client_fd
 
 local player = {}
 
+local redis_single_fp_name = "fp_single_rank"
+local redis_team_fp_name = "fp_team_rank"
+local redis_1v1_name = "1v1_rank"
+local redis_3v3_name = "3v3_rank"
+
+local redis_name_tbl = {
+	redis_single_fp_name,
+	redis_team_fp_name,
+	redis_1v1_name,
+	redis_3v3_name
+}
+
+
 function string:split(sep)
 	local sep, fields = sep or "\t", {}
 	local pattern = string.format("([^%s]+)", sep)
@@ -221,8 +234,9 @@ end
 
 function REQUEST:get_player_rank()
     print ("get_player_rank")
-	local res = skynet.call("REDIS_SERVICE","lua","proc","zrank","scoreboard",
-		  ""..player.basic.nickname.."|"..player.basic.playerid)
+ 
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zrank",redis_name_tbl[self.ranktype],
+    ""..player.basic.nickname.."|"..player.basic.playerid)
 
 	return { rank = res or 10000 }
 end
@@ -264,11 +278,9 @@ function REQUEST:get_player_items()
 end
 
 function REQUEST:get_rank_data()
-	print "get_rank_data"
-	-- local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",self.fightpower,
-	-- 	  ""..player.basic.nickname.."|"..player.basic.playerid)
+	print ("get_rank_data"..self.ranktype..redis_name_tbl[self.ranktype])
 
-	local res = skynet.call("REDIS_SERVICE","lua","proc","zrevrange","scoreboard",self.start-1,
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zrevrange",redis_name_tbl[self.ranktype],self.start-1,
 		  self.start+self.count-2,"withscores")
 
 	print ("aaa"..dump(res))
@@ -289,10 +301,6 @@ end
 
 function REQUEST:get_player_soul()
     return { souls = player.souls }
-end
-
-function REQUEST:set_player_basic()
-	return { result = 1}
 end
 
 function REQUEST:set_cursoul()
@@ -323,7 +331,6 @@ function REQUEST:pass_boss_level()
 end
 
 
-
 function REQUEST:pass_level()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
@@ -340,7 +347,9 @@ end
 
 function REQUEST:set_fightpower()
 	print "set fightpower~"
-	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",self.fightpower,
+    
+
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
 	return { result = 1 }
 end
@@ -448,6 +457,29 @@ function REQUEST:sell_item()
 	add_gold(self.gold)
 end
 
+function REQUEST:fight_with_player()
+    return { result = 1 }
+end
+
+function REQUEST:add_offline_reward()
+	add_gold(self.gold)
+	add_diamond(self.diamond)
+    
+    if self.items ~= nil then
+		for _,v in pairs(self.items) do
+			player.items[v.itemid] = v
+			--table.insert(player.items,v)
+		end
+	end
+
+	return { result = 1 }
+end
+
+function REQUEST:get_fight_data( )
+ 	-- body
+end
+
+
 
 
 --落地数据到数据库
@@ -547,7 +579,9 @@ function REQUEST:create_new_player()
     save_to_db()
 
     -- 战5渣 at first
-    local res = skynet.call("REDIS_SERVICE","lua","proc","zadd","scoreboard",5,
+    local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,5,
+		  ""..player.basic.nickname.."|"..player.basic.playerid)
+    res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,5,
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
 
 
