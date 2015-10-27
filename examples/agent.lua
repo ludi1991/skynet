@@ -223,7 +223,7 @@ function REQUEST:get_player_rank()
     print ("get_player_rank")
 	local res = skynet.call("REDIS_SERVICE","lua","proc","zrank","scoreboard",
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
-	
+
 	return { rank = res or 10000 }
 end
 
@@ -231,14 +231,6 @@ function REQUEST:login()
 	player.playerid = self.playerid
 
 	local sqlstr
-
-	  -- playerid 0 : integer
-   --  level 1 : integer
-   --  gold 2 : integer
-   --  diamond 3 : integer
-   --  nickname 4 : string
-   --  last_login_time 5 : string
-   --  create_time 6 : string
 
 	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time,cursoul,cur_stayin_level FROM L2.player_basic where playerid = "..player.playerid;
 	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
