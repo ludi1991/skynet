@@ -97,6 +97,7 @@ get_player_rank 8{
 }
 
 
+
 #登录
 login 9 {   
     request {
@@ -235,6 +236,7 @@ pass_boss_level 21 {
     }
 }
 
+#设置玩家战斗力
 set_fightpower 22{
     request {
         fightpower 0 : integer
@@ -244,7 +246,15 @@ set_fightpower 22{
     }
 }
 
-
+#获取玩家的战斗信息
+get_fight_data 23 {
+    request {
+        playerid 0 : integer
+    }
+    response {
+        
+    }
+}
 
 set_cur_stayin_level 24 {
     request {
