@@ -90,7 +90,10 @@ get_player_basic 7 {   #获取玩家基本数据
 }
 
 #获取玩家排名
-get_player_rank 8{     
+get_player_rank 8{ 
+    request {
+        ranktype 0 : integer #1个人战力 2团队战力 3 1v1paiming 4 3v3排名
+    }    
     response {
         rank 0: integer       #排名
     }
@@ -124,6 +127,7 @@ get_rank_data 11 {
     request {
         start 0 : integer    #起始的index(1是第一个)
         count 1 : integer    #数量
+        ranktype 2 : integer 
     }
 
     response {
@@ -138,17 +142,6 @@ get_player_soul 12 {
     }
 }
 
-
-#设置玩家基本信息
-set_player_basic 13 {
-    request {
-        type 0 : string     
-        value 1 : string
-    }
-    response {
-        result 0 : integer 
-    }
-}
 
 #过关
 pass_level 14 {
@@ -240,13 +233,14 @@ pass_boss_level 21 {
 set_fightpower 22{
     request {
         fightpower 0 : integer
+        type 1 :integer #1 单独武器娘战斗力 2团队战斗力
     }
     response {
         result 0 : integer #1success0failed
     }
 }
 
-#获取玩家的战斗信息
+#获取玩家的战斗信息(用于玩家对战)
 get_fight_data 23 {
     request {
         playerid 0 : integer
@@ -288,6 +282,7 @@ upgrade_item 26 {
     }
 }
 
+#熔炼装备
 melt_item 27 {
     request {
         itemids 0 : *integer 
@@ -299,6 +294,7 @@ melt_item 27 {
     }
 }
 
+#卖物品
 sell_item 28 {
     request {
         itemids 0 : *integer
@@ -307,6 +303,32 @@ sell_item 28 {
     response {
         result 0: integer #1success 0noitem
     }
+}
+
+#玩家对战
+fight_with_player 29{
+    request {
+        enemyid 0 : integer
+        fighttype 1 : integer #1 1v1 2 3v3
+        result 2 : integer #1win 2lose
+    }
+    response {
+        result 0 : integer #1success 0 failed
+    }
+}
+
+#离线战斗奖励
+add_offline_reward 30 {
+    request {
+        level 0 : integer  #第几关
+        items 1 : *item
+        gold 2 : integer
+        diamond 3 :integer
+    }
+    response {
+        result 0 : integer
+    }
+    
 }
 
 
