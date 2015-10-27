@@ -250,20 +250,23 @@ function REQUEST:login()
 	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
 	player.basic = res[1]
 
-	sqlstr = "SELECT data FROM L2.item_b where playerid = "..player.playerid;
-	local items = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-    _,player.items = pcall(load("return "..items[1].data))
 
-	sqlstr = "SELECT data FROM L2.soul_b where playerid = "..player.playerid;
-	local souls = skynet.call("MYSQL_SERVICE","lua","query",sqlstr);
-	_,player.souls = pcall(load("return "..souls[1].data))
-    
-    sqlstr = "SELECT data FROM L2.task_b where playerid = "..player.playerid;
-    local tasks = skynet.call("MYSQL_SERVICE","lua","query",sqlstr);
-    _,player.tasks = pcall(load("return "..tasks[1].data))
+	local function get_data_from_mysql(player_tbl_name,mysql_tbl_name,playerid)
+        local sqlstr = "SELECT data FROM L2."..mysql_tbl_name.." where playerid = "..playerid;
+        local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
+        if res and res[1] then
+        	_,player[player_tbl_name] = pcall(load("return "..res[1].data))
+        else
+        	print ("login get_data_from_mysql failed"..mysql_tbl_name.."playerid =".. playerid)
+        end
+	end
+
+	get_data_from_mysql("items","item_b",player.playerid)
+	get_data_from_mysql("souls","soul_b",player.playerid)
+	get_data_from_mysql("tasks","task_b",player.playerid)
+	get_data_from_mysql("config","player_config",player.playerid)
+
     print ("player "..player.playerid.."is initalized!")
-
-    -- finish task test
     
 	return { result = 1 }
 end
@@ -347,7 +350,6 @@ end
 
 function REQUEST:set_fightpower()
 	print "set fightpower~"
-    
 
 	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
@@ -355,23 +357,6 @@ function REQUEST:set_fightpower()
 end
 
 function REQUEST:set_player_soul()
- --    local function exist_soul(soulid)
- --        for i,v in pairs(player.souls) do
- --        	if v.soulid == soulid then
- --        		return true,i
- --        	end
- --        end
- --        return false,nil
- --    end
-    
-
-	-- for i,v in pairs(self.souls) do
-	-- 	local exist,id = exist_soul(v.soulid)
-	-- 	if exist then
-	-- 		player.souls[id] = v
-	-- 	else 
-	-- 		player.souls[v.soulid] = v 
-	-- end
 	for i,v in pairs(self.souls) do
 		player.souls[v.soulid] = v
 	end
@@ -475,8 +460,23 @@ function REQUEST:add_offline_reward()
 	return { result = 1 }
 end
 
-function REQUEST:get_fight_data( )
+function REQUEST:get_fight_data()
  	-- body
+end
+
+function REQUEST:set_fight_soul()
+	if player.player_config == nil then
+		print ("set_fight_soul failed!")
+		return { result = 0 }
+	end
+
+	
+    if self.type == 1 then
+    	player.player_config.soulid_1v1 = self.soulid[1]
+    elseif self.type == 2 then
+    	player.player_config.soulid_3v3 = self.soulid
+    end
+    return { result = 1 }
 end
 
 
@@ -516,8 +516,7 @@ local function save_to_db()
 	    str = "INSERT INTO L2.task_b (playerid,data) values ('"..player.basic.playerid.."','"..taskstr.."');"
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
-
-
+        
     else
     	print ("the player is exist,update mysql")
         local tmp = ""
@@ -528,16 +527,17 @@ local function save_to_db()
     	local str = "UPDATE L2.player_basic set "..tmp.."where playerid =".. player.basic.playerid
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
-	    local function get_data_from_mysql(player_table,mysql_table)
+	    local function update_mysql_table(player_table,mysql_table)
 	    	local thestr = dump(player[player_table],true)
 	        str = "UPDATE L2."..mysql_table.." SET data = '"..thestr.."' where playerid = "..player.basic.playerid;
 	        local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 	    end
 
 
-	    get_data_from_mysql("items","item_b")
-	    get_data_from_mysql("souls","soul_b")
-	    get_data_from_mysql("tasks","task_b")
+	    update_mysql_table("items","item_b")
+	    update_mysql_table("souls","soul_b")
+	    update_mysql_table("tasks","task_b")
+	    update_mysql_table("config","player_config")
 	
     end
  
@@ -575,6 +575,7 @@ function REQUEST:create_new_player()
             { taskid = 4,type = 4,description = "5 task",percent = 0},
             { taskid = 5,type = 5,description = "6 task",percent = 0},
     	} 
+    player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
     
     save_to_db()
 

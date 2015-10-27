@@ -99,8 +99,6 @@ get_player_rank 8{
     }
 }
 
-
-
 #登录
 login 9 {   
     request {
@@ -328,9 +326,18 @@ add_offline_reward 30 {
     response {
         result 0 : integer
     }
-    
 }
 
+#设置出战的武器娘
+set_fight_soul 31 {
+    request {
+        type 0 : integer #1 1v1 2 3v3
+        soulid 1 : *integer #武器娘id如果是1v1就是1个值,如果是3v3就是3个值
+    }
+    response {
+        result 0 : integer #1success0failed
+    }
+}
 
 
 ]]
