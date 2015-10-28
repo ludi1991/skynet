@@ -1,4 +1,4 @@
-local skynet = require "skynet"
+								local skynet = require "skynet"
 local netpack = require "netpack"
 local socket = require "socket"
 local sproto = require "sproto"
@@ -112,11 +112,12 @@ local function remove_item(itemid,count)
 end
 
 local function add_item(item)
-	if player.items[itemid] ~= nil then
+	if player.items ~= nil then
+        print ("add_item"..dump(item))
 		if have_item(item.itemid) then
-			player.item[item.itemid].itemcount = player.item[item.itemid].itemcount + item.itemcount
+			player.items[item.itemid].itemcount = player.items[item.itemid].itemcount + item.itemcount
 		else
-			player.item[item.itemid] = item
+			player.items[item.itemid] = item
 		end
 		return true
 	end
@@ -125,12 +126,13 @@ local function add_item(item)
 end
 
 local function update_item(item)
+        print ("update_item"..dump(item))
 	if have_item(item.itemid) == false then
 		print ("update_item failed")
 		return false
 	end
-	player.item[item.itemid].itemtype = item.itemtype
-	player.item[item.itemid].itemextra = item.itemextra
+	player.items[item.itemid].itemtype = item.itemtype
+	player.items[item.itemid].itemextra = item.itemextra
 	return true
 
 end
@@ -328,6 +330,7 @@ end
 function REQUEST:strengthen_item()
     if have_enough_gold(self.gold) and have_enough_stone(self.stone) and 
        have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
+       print ("strengthen_item"..dump(self.item))
 
        add_gold(-self.gold)
        add_diamond(-self.diamond)
@@ -381,7 +384,9 @@ function REQUEST:sell_item()
     	remove_item(id)
     end
 
-	add_gold(self.gold)
+    add_gold(self.gold[1])
+    return { result = 1}
+    
 end
 
 function REQUEST:fight_with_player()
