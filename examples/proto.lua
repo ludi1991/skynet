@@ -242,9 +242,11 @@ set_fightpower 22{
 get_fight_data 23 {
     request {
         playerid 0 : integer
+        type 1 : integer #1 1v1 2 3v3
     }
     response {
-        
+        souls 0 : *soul #技能soul
+        items 1 : *item #对应装备
     }
 }
 

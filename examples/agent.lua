@@ -26,63 +26,6 @@ local redis_name_tbl = {
 	redis_3v3_name
 }
 
-
-function string:split(sep)
-	local sep, fields = sep or "\t", {}
-	local pattern = string.format("([^%s]+)", sep)
-	self:gsub(pattern, function(c) fields[#fields+1] = c end)
-	return fields
-end
-
--- print lua data
-local function dump(obj,oneline)
-    local getIndent, quoteStr, wrapKey, wrapVal, dumpObj
-    getIndent = function(level)
-        return string.rep("\t", level)
-    end
-    quoteStr = function(str)
-        return '"' .. string.gsub(str, '"', '\\"') .. '"'
-    end
-    wrapKey = function(val)
-        if type(val) == "number" then
-            return "[" .. val .. "]"
-        elseif type(val) == "string" then
-            return "[" .. quoteStr(val) .. "]"
-        else
-            return "[" .. tostring(val) .. "]"
-        end
-    end
-    wrapVal = function(val, level)
-        if type(val) == "table" then
-            return dumpObj(val, level)
-        elseif type(val) == "number" then
-            return val
-        elseif type(val) == "string" then
-            return quoteStr(val)
-        else
-            return tostring(val)
-        end
-    end
-    dumpObj = function(obj, level)
-        if type(obj) ~= "table" then
-            return wrapVal(obj)
-        end
-        level = level + 1
-        local tokens = {}
-        tokens[#tokens + 1] = "{"
-        for k, v in pairs(obj) do
-            tokens[#tokens + 1] = getIndent(level) .. wrapKey(k) .. " = " .. wrapVal(v, level) .. ","
-        end
-        tokens[#tokens + 1] = getIndent(level - 1) .. "}"
-
-        local thestr = "\n"
-        if oneline then thestr = " " end
-        return table.concat(tokens, thestr)
-    end
-    return dumpObj(obj, 0)
-end
-
-
 local function have_enough_gold(value)
 	return player.basic ~= nil and player.basic.gold - value >= 0
 end
@@ -286,7 +229,6 @@ function REQUEST:get_rank_data()
 	local res = skynet.call("REDIS_SERVICE","lua","proc","zrevrange",redis_name_tbl[self.ranktype],self.start-1,
 		  self.start+self.count-2,"withscores")
 
-	print ("aaa"..dump(res))
 	local result = {}
 	for i=1,self.count*2,2 do
 		local tbl = res[i]:split("|")
@@ -461,6 +403,11 @@ function REQUEST:add_offline_reward()
 end
 
 function REQUEST:get_fight_data()
+	if self.type == 1 then
+
+	elseif self.type == 2 then
+
+	end
  	-- body
 end
 
@@ -470,7 +417,7 @@ function REQUEST:set_fight_soul()
 		return { result = 0 }
 	end
 
-	
+
     if self.type == 1 then
     	player.player_config.soulid_1v1 = self.soulid[1]
     elseif self.type == 2 then
@@ -640,7 +587,6 @@ skynet.register_protocol {
 
 
 function CMD.chat(themsg)
-    print "CMD chat"
 	send_package(send_request("chatting",{name = themsg.name ,msg = themsg.msg,time = os.date()}))
 end
 
