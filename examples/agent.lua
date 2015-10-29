@@ -301,6 +301,8 @@ function REQUEST:set_fightpower()
 end
 
 function REQUEST:set_player_soul()
+	if not self.souls then return end
+	 
 	for i,v in pairs(self.souls) do
 		player.souls[v.soulid] = v
 	end
