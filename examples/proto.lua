@@ -231,7 +231,7 @@ pass_boss_level 21 {
 set_fightpower 22{
     request {
         fightpower 0 : integer
-        type 1 :integer #1 单独武器娘战斗力 2团队战斗力
+        type 1 :integer #1 单独武器娘战斗力 2团队战斗力 
     }
     response {
         result 0 : integer #1success0failed

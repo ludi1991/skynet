@@ -1,4 +1,4 @@
-								local skynet = require "skynet"
+local skynet = require "skynet"
 local netpack = require "netpack"
 local socket = require "socket"
 local sproto = require "sproto"
@@ -126,9 +126,7 @@ local function add_item(item)
 end
 
 local function update_item(item)
-        print ("update_item"..dump(item))
 	if have_item(item.itemid) == false then
-		print ("update_item failed")
 		return false
 	end
 	player.items[item.itemid].itemtype = item.itemtype
@@ -178,15 +176,22 @@ function REQUEST:get_player_basic()
 end
 
 function REQUEST:get_player_rank()
-    print ("get_player_rank")
+	log("type:"..redis_name_tbl[self.ranktype])
  
-	local res = skynet.call("REDIS_SERVICE","lua","proc","zrank",redis_name_tbl[self.ranktype],
+	local res = skynet.call("REDIS_SERVICE","lua","proc","zrevrank",redis_name_tbl[self.ranktype],
     ""..player.basic.nickname.."|"..player.basic.playerid)
 
-	return { rank = res or 10000 }
+    if res then
+    	res = res + 1
+    else
+    	res = 10000
+    end
+
+	return { rank = res }
 end
 
 function REQUEST:login()
+	log("login","info")
 	player.playerid = self.playerid
 
 	local sqlstr
@@ -293,7 +298,7 @@ function REQUEST:pass_level()
 end
 
 function REQUEST:set_fightpower()
-	print "set fightpower~"
+	log("fightpower"..self.fightpower..","..redis_name_tbl[self.type]..","..player.basic.playerid)
 
 	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
 		  ""..player.basic.nickname.."|"..player.basic.playerid)
@@ -310,19 +315,13 @@ function REQUEST:set_player_soul()
 end
 
 function REQUEST:get_tasks()
-	return {
-        tasks = {
-            { taskid = 0,type = 0,description = "first task",percent = 0},
-            { taskid = 1,type = 1,description = "2 task",percent = 50},
-            { taskid = 2,type = 2,description = "3 task",percent = 100},
-            { taskid = 3,type = 3,description = "4 task",percent = 100},
-            { taskid = 4,type = 4,description = "5 task",percent = 100},
-            { taskid = 5,type = 5,description = "6 task",percent = 100},
-    	}
-	}
+	if player.tasks ~= nil then
+		return { tasks = player.tasks }
+	else
+		print ("get_tasks_failed")
+	end
+
 end
-
-
 
 function REQUEST:set_cur_stayin_level()
     player.basic.cur_stayin_level = self.level
@@ -470,6 +469,8 @@ local function save_to_db()
 	    str = "INSERT INTO L2.task_b (playerid,data) values ('"..player.basic.playerid.."','"..taskstr.."');"
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
 
+	
+
         
     else
     	print ("the player is exist,update mysql")
@@ -606,7 +607,7 @@ function CMD.start(conf)
 	-- slot 1,2 set at main.lua
 	host = sprotoloader.load(1):host "package"
 	send_request = host:attach(sprotoloader.load(2))
-
+	log("start","info")
 	skynet.fork(function()
 		while true do
 			print "send heartbeat"
@@ -623,10 +624,6 @@ function CMD.start(conf)
 			}
 			))
 
-			-- send_package(send_request("update_task",{
-			--     task = 123
-			-- }
-			-- ))
 			skynet.sleep(1000)
 		end
 	end)

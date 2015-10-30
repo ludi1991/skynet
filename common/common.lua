@@ -58,3 +58,13 @@ function string:split(sep)
 	self:gsub(pattern, function(c) fields[#fields+1] = c end)
 	return fields
 end
+
+function log(msg,level)
+    -- level = level or 5
+    -- local leveltbl = { "fetal","error","warning","info","debug"}
+    local info = debug.getinfo(2)
+    if info then
+        msg = string.format("[%s][%s:%d] %s",level ,info.short_src, info.currentline, msg)
+    end
+    print (msg)
+end
