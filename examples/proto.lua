@@ -53,6 +53,19 @@ proto.c2s = sprotoparser.parse [[
     three_vs_three_items 9 : *item
 }
 
+.task {
+    taskid 0: integer  #任务id   
+    type 1 :integer    #任务类型
+    icon 2 :integer    #任务icon
+    title 3 : string   #任务名
+    description 4: string  #任务描述
+    gold 5 : integer
+    diamond 6 : integer
+    items 7: *item
+    percent 8: integer    #完成百分比
+}
+
+
 handshake 1 {
     response {
         msg 0  : string
@@ -177,12 +190,6 @@ set_player_soul 15 {
     }
 }
 
-.task {
-    taskid 0: integer  #任务id   
-    type 1 :integer    #任务类型
-    description 2: string  #任务描述
-    percent 3: integer    #完成百分比
-}
 
 #任务
 get_tasks 16 {
@@ -221,6 +228,9 @@ get_server_time 19 {
 
 #领取奖励
 get_task_reward 20 {
+    request {
+        taskid 0 :integer 
+    }
     response {
         gold 0 : integer
         diamond 1 : integer
@@ -380,11 +390,23 @@ proto.s2c = sprotoparser.parse [[
     session 1 : integer
 }
 
+.item {          #物品
+    itemid 0 : integer      #物品id,对应格子
+    itemtype 1 : integer    #物品类型
+    itemextra 2: integer    #物品的额外属性
+    itemcount 3: integer    #物品的数量
+}
+
 .task {
     taskid 0: integer  #任务id   
     type 1 :integer    #任务类型
-    description 2: string  #任务描述
-    percent 3: integer    #完成百分比
+    icon 2 :integer    #任务icon
+    title 3 : string   #任务名
+    description 4: string  #任务描述
+    gold 5 : integer
+    diamond 6 : integer
+    items 7: *item
+    percent 8: integer    #完成百分比
 }
 
 heartbeat 1 {}

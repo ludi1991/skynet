@@ -4,6 +4,7 @@ local socket = require "socket"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
 local ldqueue = require "skynet.ldqueue"
+local task = require "logic.task"
 
 local WATCHDOG
 local host
@@ -27,6 +28,13 @@ local redis_name_tbl = {
 	redis_1v1_name,
 	redis_3v3_name
 }
+
+
+local function send_package(pack)  
+	local package = string.pack(">s2", pack)
+	socket.write(client_fd, package)
+end
+
 
 local function have_enough_gold(value)
 	return player.basic ~= nil and player.basic.gold - value >= 0
@@ -260,6 +268,13 @@ local function create_rank_for_player()
     skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,13000,""..player.basic.playerid)
 end
 
+
+local function update_task(thetask)
+	send_package(send_request("update_task",{
+	    task = thetask
+	}))
+end
+
 function REQUEST:get()
 	print("get", self.what)
 	local r = skynet.call("SIMPLEDB", "lua", "get", self.what)
@@ -321,7 +336,8 @@ function REQUEST:login()
 	get_data_from_mysql("souls","soul_b",player.playerid)
 	get_data_from_mysql("tasks","task_b",player.playerid)
 	get_data_from_mysql("config","player_config",player.playerid)
-
+    
+    --compatible_with_old_data()
 	sync_fight_data_to_redis()
 	--create_rank_for_player()
 
@@ -443,11 +459,47 @@ end
 
 function REQUEST:get_tasks()
 	if player.tasks ~= nil then
-		return { tasks = player.tasks }
+		local tasktbl = {}
+		for i,v in pairs(player.tasks) do
+			table.insert(tasktbl, {
+				    taskid = v.taskid,
+				    type = i,
+				    icon = i,
+				    title = "过关"..i,
+				    descriptions = "通过第........"..i.."关",
+				    gold = i*1000,
+				    diamond = i*100,
+				    percent = 100
+				})
+		end
+		return { tasks = tasktbl }
 	else
 		print ("get_tasks_failed")
 	end
+end
 
+function REQUEST:get_task_reward()
+    local id = self.taskid
+    if player.tasks[id] ~= nil then
+    	player.tasks[id] = nil	
+    	update_task({
+				    taskid = id+1,
+				    type = id+1,
+				    icon = id+1,
+				    title = "过关"..id+1,
+				    descriptions = "通过第........"..(id+1).."关",
+				    gold = (id+1)*1000,
+				    diamond = (id+1)*100,
+				    percent = 100
+				}
+    	)
+    	return {
+            gold = id*1000,
+            diamond = 100*id,
+        }
+    else
+    	log("no task!")
+    end
 end
 
 function REQUEST:set_cur_stayin_level()
@@ -687,12 +739,7 @@ function REQUEST:create_new_player()
     player.items = { }
     player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
     player.tasks = {
-            { taskid = 0,type = 0,description = "pass level 1",percent = 0},
-            { taskid = 1,type = 1,description = "2 task",percent = 0},
-            { taskid = 2,type = 2,description = "3 task",percent = 0},
-            { taskid = 3,type = 3,description = "4 task",percent = 0},
-            { taskid = 4,type = 4,description = "5 task",percent = 0},
-            { taskid = 5,type = 5,description = "6 task",percent = 0},
+            [1] = { taskid = 1,percent = 0},
     	} 
     player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
     
@@ -721,12 +768,6 @@ local function request(name, args, response)
 	if response then
 		return response(r)
 	end
-end
-
-local function send_package(pack)
-  
-	local package = string.pack(">s2", pack)
-	socket.write(client_fd, package)
 end
 
 
