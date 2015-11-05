@@ -336,7 +336,11 @@ function REQUEST:login()
 	get_data_from_mysql("souls","soul_b",player.playerid)
 	get_data_from_mysql("tasks","task_b",player.playerid)
 	get_data_from_mysql("config","player_config",player.playerid)
-    
+
+
+    if player.config == nil then
+    	player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
+    end
     --compatible_with_old_data()
 	sync_fight_data_to_redis()
 	--create_rank_for_player()
