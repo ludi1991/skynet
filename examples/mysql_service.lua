@@ -6,9 +6,8 @@ local command = {}
 local db
 
 function command.QUERY(str)
-    print ("mysql_service query "..str)
+    log ("mysql_service query "..str,"info")
     res = db:query(str)
-    print (dump(res))
     return res
 end
 

@@ -19,9 +19,6 @@ local redis_3v3_name = "3v3_rank"
 
 
 function command.PROC(func,...)
-    print "proc"
-    print (func)
-    print (...)
     local res = db[func](db,...)
     return res
 end
@@ -34,6 +31,53 @@ local function watching()
     while true do
         print("Watch", w:message())
     end
+end
+
+local function addrobot()
+    for i=1,10 do
+        local tbl = { 
+                        playerid = i+1000000 , 
+                        nickname = "robot"..i+1000000 , 
+                        imageid = i%10 , 
+                        level = 15 , 
+                        one_vs_one_fp = 10000-i*10,
+                        three_vs_three_fp = 30000 - i*10,
+                        one_vs_one_soul = 
+                        { 
+                            soulid = 0 , 
+                            itemids = { 1,-1,-1,-1,-1,-1,-1,-1 } , 
+                            soul_girl_id = 1 
+                        } ,
+                        one_vs_one_items = 
+                        {  
+                            { itemid = 1, itemtype = 1101010 , itemextra = 0 , itemcount = 1} , 
+                            { itemid = 2 , itemtype = 1101010 , itemextra = 0 ,itemcount = 1} , 
+                        } ,
+
+                        three_vs_three_souls = 
+                        { 
+                            { soulid = 0 , itemids = { 1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1},
+                            { soulid = 1 , itemids = { -1,2,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 2},
+                            { soulid = 2 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 3},
+                        },
+
+                        three_vs_three_items = 
+                        {
+                            { itemid = 1 , itemtype = 1010101 , itemextra = 0 , itemcount = 1},
+                            { itemid = 2 , itemtype = 1010101 , itemextra = 0 , itemcount = 1},
+                        }
+                    }
+
+        db:set(""..(1000000+i).."_data",dump(tbl))
+        db:zadd(redis_single_fp_name,i,""..tbl.playerid)
+        db:zadd(redis_team_fp_name,i,""..tbl.playerid)
+        
+        db:zadd(redis_1v1_name,i,""..tbl.playerid)
+        db:zadd(redis_3v3_name,i,""..tbl.playerid)
+
+
+    end
+    log ("finished robot!")
 end
 
 skynet.start(function()
@@ -50,19 +94,13 @@ skynet.start(function()
         else
             error(string.format("Unknown command %s", tostring(cmd)))
         end
-
     end)
     skynet.register "REDIS_SERVICE"
-    
-    --add 1000 robot
-    for i=1,1000 do
-        db:zadd(redis_single_fp_name,i,"robot_s"..i.."|"..i)
-        db:zadd(redis_team_fp_name,i,"robot_t"..i.."|"..i)
-        db:zadd(redis_1v1_name,i,"robot_1"..i.."|"..i)
-        db:zadd(redis_3v3_name,i,"robot_3"..i.."|"..i)
-    end
 
+   -- addrobot()
     
+    -- add robot to redis 
+   
     --print (db:zrange(redis_single_fp_name,0,2))
     
     -- db:del "C"

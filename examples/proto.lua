@@ -40,6 +40,19 @@ proto.c2s = sprotoparser.parse [[
     soul_girl_id 2 :integer  #魂的武器娘id
 }
 
+.fightdata {  #玩家战斗信息
+    playerid 0 : integer
+    nickname 1 : string
+    imageid 2 : integer
+    level 3 : integer
+    one_vs_one_fp 4 : integer
+    one_vs_one_soul 5: soul
+    one_vs_one_items 6 : *item
+    three_vs_three_fp 7 : integer
+    three_vs_three_souls 8 : *soul
+    three_vs_three_items 9 : *item
+}
+
 handshake 1 {
     response {
         msg 0  : string
@@ -242,11 +255,9 @@ set_fightpower 22{
 get_fight_data 23 {
     request {
         playerid 0 : integer
-        type 1 : integer #1 1v1 2 3v3
     }
     response {
-        souls 0 : *soul #技能soul
-        items 1 : *item #对应装备
+        fightdata 0 : fightdata
     }
 }
 
@@ -305,8 +316,8 @@ sell_item 28 {
     }
 }
 
-#玩家对战
-fight_with_player 29{
+#玩家对战结果
+fight_with_player_result 29{
     request {
         enemyid 0 : integer
         fighttype 1 : integer #1 1v1 2 3v3
@@ -340,6 +351,25 @@ set_fight_soul 31 {
         result 0 : integer #1success0failed
     }
 }
+
+#获得对战玩家的id
+get_fight_player_ids 32 {
+    response {
+        one_vs_one_ids 0 : *integer
+        three_vs_three_ids 1 : *integer
+    }
+}
+
+start_fight_with_player 33 {
+    request {
+        playerid 0 : integer #enemy playerid
+        fighttype 1 : integer 
+    }
+    response {
+        result 0 : integer # 1 success 0 occupid -1 failed
+    }
+}
+
 
 
 ]]
