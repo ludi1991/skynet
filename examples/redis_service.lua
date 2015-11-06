@@ -34,7 +34,7 @@ local function watching()
 end
 
 local function addrobot()
-    for i=1,10 do
+    for i=1,100 do
         local tbl = { 
                         playerid = i+1000000 , 
                         nickname = "robot"..i+1000000 , 
@@ -70,8 +70,7 @@ local function addrobot()
 
         db:set(""..(1000000+i).."_data",dump(tbl))
         db:zadd(redis_single_fp_name,i,""..tbl.playerid)
-        db:zadd(redis_team_fp_name,i,""..tbl.playerid)
-        
+        db:zadd(redis_team_fp_name,i,""..tbl.playerid)     
         db:zadd(redis_1v1_name,i,""..tbl.playerid)
         db:zadd(redis_3v3_name,i,""..tbl.playerid)
 
@@ -97,7 +96,7 @@ skynet.start(function()
     end)
     skynet.register "REDIS_SERVICE"
 
-   -- addrobot()
+    addrobot()
     
     -- add robot to redis 
    

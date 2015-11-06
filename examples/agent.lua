@@ -226,17 +226,18 @@ end
 
 local function get_playerrank(ranktype)
 	local res
-    if ranktype == 1 or 2 then
+    if ranktype == 1 or ranktype == 2 then
 	    res = skynet.call("REDIS_SERVICE","lua","proc","zrevrank",redis_name_tbl[ranktype],player.basic.playerid)
 	    if res then
 	    	res = res + 1
 	    else
 	    	res = 10000
 	    end
-	elseif ranktype == 3 or 4 then
+	elseif ranktype == 3 or ranktype == 4 then
 	    res = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[ranktype],player.basic.playerid)
 		if res then
-	    	res = res 
+			log(res)
+	    	res = tonumber(res) 
 	    else
 	    	res = 10000
 	    end
@@ -263,9 +264,8 @@ end
 local function create_rank_for_player()
 	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,5,""..player.basic.playerid)
     skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,5,""..player.basic.playerid)
-
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,12000,""..player.basic.playerid)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,13000,""..player.basic.playerid)
+    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,10000,""..player.basic.playerid)
+    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,10000,""..player.basic.playerid)
 end
 
 
@@ -385,17 +385,19 @@ function REQUEST:get_rank_data()
 	    	  	rank = math.ceil((i-1)/2)+self.start 
 	    	})
         elseif self.ranktype == 3 or self.ranktype == 4 then
+
+
         	table.insert(result,
     		{
                 playerid = tonumber(theplayerid),
                 name = fight_data.nickname,
-                score = self.ranktype == 3 and fight_data.one_vs_one_fp or three_vs_three_fp ,
+                score = self.ranktype == 3 and fight_data.one_vs_one_fp or fight_data.three_vs_three_fp ,
                 rank = math.ceil((i-1)/2)+self.start 
     		})
         end
 
     end
-
+    log ("get_rank_data"..self.ranktype..dump(result))
     return { data = result }
 
 end
