@@ -224,6 +224,20 @@ local function sync_fight_data_to_redis()
 	local res = skynet.call("REDIS_SERVICE","lua","proc","set",""..player.basic.playerid.."_data",dump(tbl))
 end
 
+local function get_player_fightpower(ranktype)
+	local res
+	if ranktype == 1 or ranktype == 2 then
+	    res = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[ranktype],player.basic.playerid)
+	    res = tonumber(res)
+	elseif ranktype == 3 or ranktype == 4 then
+		local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",player.basic.playerid.."_data")
+        local _,fight_data = pcall(load("return "..fight_data_str))
+        res = ranktype == 3 and fight_data.one_vs_one_fp or fight_data.three_vs_three_fp
+    end
+    log("get_player_fightpower type:"..ranktype.." ,power:"..res,"info")
+    return res
+end
+
 local function get_playerrank(ranktype)
 	local res
     if ranktype == 1 or ranktype == 2 then
@@ -310,7 +324,7 @@ function REQUEST:get_player_basic()
 end
 
 function REQUEST:get_player_rank()
-	return { rank = get_playerrank(self.ranktype) }
+	return { rank = get_playerrank(self.ranktype) , fightpower = get_player_fightpower(self.ranktype) }
 end
 
 function REQUEST:login()

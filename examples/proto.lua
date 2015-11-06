@@ -122,6 +122,7 @@ get_player_rank 8{
     }    
     response {
         rank 0: integer       #排名
+        fightpower 1: integer   #战斗力
     }
 }
 
