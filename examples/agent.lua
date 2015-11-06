@@ -262,10 +262,12 @@ local function is_player_in_fight(playerid,type)
 end
 
 local function create_rank_for_player()
-	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,5,""..player.basic.playerid)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,5,""..player.basic.playerid)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,10000,""..player.basic.playerid)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,10000,""..player.basic.playerid)
+	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,1,""..player.basic.playerid)
+    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,1,""..player.basic.playerid)
+    local o_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_1v1_name)
+    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,o_count+1,""..player.basic.playerid)
+    local t_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_3v3_name)
+    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,t_count+1,""..player.basic.playerid)
 end
 
 
@@ -343,7 +345,6 @@ function REQUEST:login()
     end
     --compatible_with_old_data()
 	sync_fight_data_to_redis()
-	--create_rank_for_player()
 
     log ("player "..player.playerid.." is initalized!","info")
     
