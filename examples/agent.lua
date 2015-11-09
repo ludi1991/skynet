@@ -4,7 +4,6 @@ local socket = require "socket"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
 local ldqueue = require "skynet.ldqueue"
-local task = require "logic.task"
 
 local WATCHDOG
 local host
@@ -761,7 +760,10 @@ function REQUEST:create_new_player()
     player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
     player.tasks = {
             [1] = { taskid = 1,percent = 0},
-    	} 
+            [2] = { taskid = 2,percent = 0},
+            [3] = { taskid = 3,percent = 0},
+            [4] = { taskid = 4,percent = 0}
+     	} 
     player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
     
     save_to_db()

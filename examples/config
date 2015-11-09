@@ -17,4 +17,5 @@ snax = root.."examples/?.lua;"..root.."test/?.lua"
 cpath = root.."cservice/?.so"
 -- daemon = "./skynet.pid"
 
-lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua"
+
+lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua;./gamelogic/lua_for_server/?.lua"
