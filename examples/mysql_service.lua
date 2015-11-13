@@ -14,11 +14,11 @@ end
 skynet.start(function()
     
     db=mysql.connect{
-        host="121.40.241.223",
-        port=3306,
-        database="L2",
-        user="ludi",
-        password="67108864ld",
+        host=skynet.getenv("mysql_host"),
+        port=skynet.getenv("mysql_port"),
+        database=skynet.getenv("mysql_database"),
+        user=skynet.getenv("mysql_user"),
+        password=skynet.getenv("mysql_password"),
         max_packet_size = 1024 * 1024
     }
     if not db then

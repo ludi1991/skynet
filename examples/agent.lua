@@ -67,12 +67,11 @@ local function add_gold(value)
 		else 
             player.basic.gold = player.basic.gold + value
             if value < 0 then
-            	log ("add_gold task 1")
+            	
             	statmgr:add_gold_consumed(-value)
-            	log ("add_gold task 2")
+            	
             	taskmgr:update_tasks_by_condition_type(5)
-            	log ("add_gold task 3")
-
+            	
             end
 		    return true
         end

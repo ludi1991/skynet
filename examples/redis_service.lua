@@ -2,9 +2,18 @@ local skynet = require "skynet"
 require "skynet.manager"
 local redis = require "redis"
 
+
+
 local conf = {
     host = "127.0.0.1" ,
     port = 6379 ,
+    db = 0
+}
+
+
+local conf = {
+    host = skynet.getenv("redis_addr") ,
+    port = skynet.getenv("redis_port") ,
     db = 0
 }
 
@@ -95,8 +104,10 @@ skynet.start(function()
         end
     end)
     skynet.register "REDIS_SERVICE"
-
-    addrobot()
+    
+    if skynet.getenv("add_robot") then
+        addrobot()
+    end
     
     -- add robot to redis 
    
