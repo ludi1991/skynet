@@ -6,7 +6,7 @@ local command = {}
 local db
 
 function command.QUERY(str)
-    log ("mysql_service query "..str,"info")
+   -- log ("mysql_service query "..str,"info")
     res = db:query(str)
     return res
 end

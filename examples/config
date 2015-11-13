@@ -18,4 +18,4 @@ cpath = root.."cservice/?.so"
 -- daemon = "./skynet.pid"
 
 
-lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua;./gamelogic/lua_for_server/?.lua"
+lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua;./gamelogic/lua_for_server/?.lua;./?.lua"
