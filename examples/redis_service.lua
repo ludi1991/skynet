@@ -104,13 +104,9 @@ skynet.start(function()
         end
     end)
     skynet.register "REDIS_SERVICE"
-    
     if skynet.getenv("add_robot") then
         addrobot()
     end
-    
-    -- add robot to redis 
-   
     --print (db:zrange(redis_single_fp_name,0,2))
     
     -- db:del "C"
