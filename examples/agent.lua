@@ -6,7 +6,7 @@ local sprotoloader = require "sprotoloader"
 local ldqueue = require "skynet.ldqueue"
 local taskmgr = require "gamelogic.taskmgr"
 local statmgr = require "gamelogic.statmgr"
-local cal_fp = require "gamelogic.cal_fight_power"
+local fp_cal = require "gamelogic.fp_calculator"
 
 local WATCHDOG
 local host
@@ -724,6 +724,23 @@ function REQUEST:get_fight_player_ids()
 	}
 end
 
+-- collect_parachute 34 {
+--     request {
+--         gold 0 : integer
+--         diamond 1 : integer
+--     }
+--     response {
+--         result 0 : integer # 1 success 0 failed
+--     }
+-- }
+
+
+function REQUEST:collect_parachute()
+	add_gold(self.gold)
+	add_diamond(self.diamond)
+	return { result = 1 }
+end
+
 
 
 --落地数据到数据库
@@ -958,5 +975,5 @@ skynet.start(function()
 		end
 	end)
 	taskmgr:get_task_details(3)
-	cal_fp:get_soul_fightpower(3)
+	fp_cal:get_soul_fightpower(3)
 end)

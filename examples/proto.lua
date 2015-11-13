@@ -381,6 +381,16 @@ start_fight_with_player 33 {
     }
 }
 
+collect_parachute 34 {
+    request {
+        gold 0 : integer
+        diamond 1 : integer
+    }
+    response {
+        result 0 : integer # 1 success 0 failed
+    }
+}
+
 
 
 ]]

@@ -19,7 +19,7 @@ daemon = "./skynet.pid"
 
 lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua;./gamelogic/lua_for_server/?.lua;./?.lua"
 
---add_robot = true
+add_robot = false
 
 redis_addr = "127.0.0.1"
 redis_port = 6379
