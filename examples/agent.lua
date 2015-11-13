@@ -4,6 +4,9 @@ local socket = require "socket"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
 local ldqueue = require "skynet.ldqueue"
+local taskmgr = require "gamelogic.taskmgr"
+local statmgr = require "gamelogic.statmgr"
+local cal_fp = require "gamelogic.cal_fight_power"
 
 local WATCHDOG
 local host
@@ -14,7 +17,6 @@ local REQUEST = {}
 local client_fd
 
 local player = {}
-
 
 local redis_single_fp_name = "fp_single_rank"
 local redis_team_fp_name = "fp_team_rank"
@@ -64,6 +66,14 @@ local function add_gold(value)
 		    return false
 		else 
             player.basic.gold = player.basic.gold + value
+            if value < 0 then
+            	log ("add_gold task 1")
+            	statmgr:add_gold_consumed(-value)
+            	log ("add_gold task 2")
+            	taskmgr:update_tasks_by_condition_type(5)
+            	log ("add_gold task 3")
+
+            end
 		    return true
         end
     end
@@ -80,6 +90,10 @@ local function add_diamond(value)
 		    return false
 		else 
             player.basic.diamond = player.basic.diamond + value
+            if value < 0 then
+            	statmgr:add_diamond_consumed(-value)
+            	taskmgr:update_tasks_by_condition_type(5)
+            end
 		    return true
         end
     end
@@ -116,13 +130,13 @@ local function remove_item(itemid,count)
         end
         return true
     end
-    print ("remove_item failed")
+    log ("remove_item failed")
     return false
 end
 
 local function add_item(item)
 	if player.items ~= nil then
-        print ("add_item"..dump(item))
+        log ("add_item"..dump(item))
 		if have_item(item.itemid) then
 			player.items[item.itemid].itemcount = player.items[item.itemid].itemcount + item.itemcount
 		else
@@ -130,8 +144,64 @@ local function add_item(item)
 		end
 		return true
 	end
-	print ("add_item failed")
+	log ("add_item failed")
 	return false
+end
+
+-- add an item without id
+local item_can_stack_ids = {
+	[1000001] = "true"
+}
+
+local function item_can_stack(itemtype)
+    return item_can_stack_ids[itemtype] ~= nil
+end
+
+-- 是否有某种类型的装备
+local function have_item_by_itemtype(itemtype)
+	for i,v in pairs(player.items) do
+		if v.itemtype == itemtype then
+			return true,i
+		end
+	end
+	return false
+end
+
+local function generate_new_item_id()
+	return #player.items+1
+end
+
+local function add_item_autoid(itemtype,itemextra,count)
+
+    if player.items ~= nil then
+		if item_can_stack(itemtype) then
+			local have,id = have_item_by_itemtype(itemtype)
+			if have then
+				player.items[id].itemcount = player.items[id].itemcount + count
+				return id
+			else
+				local newid = generate_new_item_id()
+				player.items[newid] = {
+                    itemid = newid,
+                    itemtype = itemtype,
+                    itemextra = itemextra,
+                    itemcount = count,
+				}
+				log(dump(player.items[newid]))
+				return newid
+			end
+		else
+            local newid = generate_new_item_id()
+            player.items[newid] = {
+                    itemid = newid,
+                    itemtype = itemtype,
+                    itemextra = itemextra,
+                    itemcount = count,
+				}
+			log("add_item_autoid"..dump(player.items[newid]))
+			return newid
+		end
+	end
 end
 
 local function update_item(item)
@@ -360,7 +430,11 @@ function REQUEST:login()
 	sync_fight_data_to_redis()
 
     log ("player "..player.playerid.." is initalized!","info")
+   -- log (dump(player),"info")
     
+    taskmgr:set_player(player)
+    statmgr:set_player(player)
+
 	return { result = 1 }
 end
 
@@ -432,7 +506,6 @@ end
 function REQUEST:pass_boss_level()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
-    --print("lujiajun "..dump(self.items))
     
     if self.items ~= nil then
 		for _,v in pairs(self.items) do
@@ -443,6 +516,10 @@ function REQUEST:pass_boss_level()
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
     end
+    
+    taskmgr:update_tasks_by_condition_type(1)
+    taskmgr:trigger_task(1)
+   
 
 	return { result = 1 }
 end
@@ -479,20 +556,7 @@ end
 
 function REQUEST:get_tasks()
 	if player.tasks ~= nil then
-		local tasktbl = {}
-		for i,v in pairs(player.tasks) do
-			table.insert(tasktbl, {
-				    taskid = v.taskid,
-				    type = i,
-				    icon = i,
-				    title = "过关"..i,
-				    descriptions = "通过第........"..i.."关",
-				    gold = i*1000,
-				    diamond = i*100,
-				    percent = 100
-				})
-		end
-		return { tasks = tasktbl }
+		return { tasks = taskmgr:generate_tasks(player.tasks)}
 	else
 		print ("get_tasks_failed")
 	end
@@ -501,21 +565,16 @@ end
 function REQUEST:get_task_reward()
     local id = self.taskid
     if player.tasks[id] ~= nil then
-    	player.tasks[id] = nil	
-    	update_task({
-				    taskid = id+1,
-				    type = id+1,
-				    icon = id+1,
-				    title = "过关"..id+1,
-				    descriptions = "通过第........"..(id+1).."关",
-				    gold = (id+1)*1000,
-				    diamond = (id+1)*100,
-				    percent = 100
-				}
-    	)
+    	taskmgr:finish_task(id)
+    	local gold,diamond,item = taskmgr:get_reward(id)
+    	add_gold(gold)
+    	add_diamond(diamond)
+    	--local itemid = add_item_autoid(item.itemtype,item.itemextra,item.itemcount)
+    	--item.itemid = itemid
     	return {
-            gold = id*1000,
-            diamond = 100*id,
+            gold = gold,
+            diamond = diamond,
+         --   items = { item },
         }
     else
     	log("no task!")
@@ -561,7 +620,7 @@ end
 
 function REQUEST:melt_item()
 	for _,id in pairs(self.itemids) do
-		if have_item(id) == false then return { result = 0} end
+		if have_item(id) == false then return { result = 0 } end
 	end
     
     for _,id in pairs(self.itemids) do
@@ -570,6 +629,9 @@ function REQUEST:melt_item()
     
     add_item(self.newitem)
     add_stone(self.stone)
+
+    statmgr:add_melt_times(1)
+    taskmgr:update_tasks_by_condition_type(11)
     
     return { result = 1 }
 
@@ -682,7 +744,6 @@ local function save_to_db()
 	    local sqlstr = "INSERT INTO L2.player_basic ("..name_str..") VALUES ("..value_str..");"
 
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-
 	    
 	    -- save itemdata to mysql
 	    local itemstr = dump(player.items,true)
@@ -725,7 +786,11 @@ local function save_to_db()
 
 	    if player.config == nil then
 	    	-- config 是后加的，之前有的id没有
-	    	player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
+	    	player.config = 
+		    {   
+		        soulid_1v1 = 1 , 
+		        soulid_3v3 = { 1,2,3 } ,
+		    }
 	    	local configstr = dump(player.config,true)
 	    	str = "INSERT INTO L2.player_config (playerid,data) values ('"..player.basic.playerid.."','"..configstr.."');"
         	local res = skynet.call("MYSQL_SERVICE","lua","query",str)
@@ -758,20 +823,25 @@ function REQUEST:create_new_player()
 
     player.items = { }
     player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
-    player.tasks = {
-            [1] = { taskid = 1,percent = 0},
-            [2] = { taskid = 2,percent = 0},
-            [3] = { taskid = 3,percent = 0},
-            [4] = { taskid = 4,percent = 0}
-     	} 
-    player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
+    player.tasks = { } 
+    player.config = 
+    {   
+        soulid_1v1 = 1 , 
+        soulid_3v3 = { 1,2,3 } ,
+        finished_tasks = {} ,
+    }
     
-    save_to_db()
 
     -- 战5渣 at first
 
     create_rank_for_player()
-    
+
+    -- 0 means task for new player
+    taskmgr:set_player(player)
+    statmgr:set_player(player)
+    taskmgr:trigger_task(0)
+
+    save_to_db()
 
     return { result = 1 , playerid = newplayerid }
 
@@ -888,4 +958,6 @@ skynet.start(function()
 		else
 		end
 	end)
+	taskmgr:get_task_details(3)
+	cal_fp:get_soul_fightpower(3)
 end)
