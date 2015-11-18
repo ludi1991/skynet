@@ -6,6 +6,7 @@ local sprotoloader = require "sprotoloader"
 local ldqueue = require "skynet.ldqueue"
 local taskmgr = require "gamelogic.taskmgr"
 local statmgr = require "gamelogic.statmgr"
+local itemmgr = require "gamelogic.itemmgr"
 local fp_cal = require "gamelogic.fp_calculator"
 
 local WATCHDOG
@@ -170,6 +171,7 @@ local function generate_new_item_id()
 	return #player.items+1
 end
 
+
 local function add_item_autoid(itemtype,itemextra,count)
 
     if player.items ~= nil then
@@ -216,16 +218,27 @@ end
 --同步战斗数据到redis
 local function sync_fight_data_to_redis()
 
+
+	local single_fp = fp_cal:get_highest_fightpower(player)
+	local team_fp = fp_cal:get_player_fightpower(player)
+	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[1],single_fp,""..player.basic.playerid)
+	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[2],team_fp,""..player.basic.playerid)
+
+
 	local one_vs_one_id = player.config.soulid_1v1 
 	local three_vs_three_ids = player.config.soulid_3v3
+
+	ofp = fp_cal:get_1v1_fightpower(player)
+	tfp = fp_cal:get_3v3_fightpower(player)
+
 
 	local tbl = {
         playerid = player.basic.playerid,
         nickname = player.basic.nickname,
         imageid = 3,
         level = player.basic.level,
-        one_vs_one_fp = 9876,
-        three_vs_three_fp = 8765,
+        one_vs_one_fp = ofp,
+        three_vs_three_fp = tfp,
         one_vs_one_soul = 
         { 
             soulid = 0 , 
@@ -287,9 +300,8 @@ local function sync_fight_data_to_redis()
 		log("no three vs three ids in player.config")
 	end
 
-
-    
 	local res = skynet.call("REDIS_SERVICE","lua","proc","set",""..player.basic.playerid.."_data",dump(tbl))
+    
 end
 
 local function get_player_fightpower(ranktype)
@@ -305,6 +317,29 @@ local function get_player_fightpower(ranktype)
     log("get_player_fightpower type:"..ranktype.." ,power:"..res,"info")
     return res
 end
+
+local function get_rank(ranktype,playerid)
+	local res
+    if ranktype == 1 or ranktype == 2 then
+	    res = skynet.call("REDIS_SERVICE","lua","proc","zrevrank",redis_name_tbl[ranktype],playerid)
+	    if res then
+	    	res = res + 1
+	    else
+	    	res = 10000
+	    end
+	elseif ranktype == 3 or ranktype == 4 then
+	    res = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[ranktype],playerid)
+		if res then
+			log(res)
+	    	res = tonumber(res) 
+	    else
+	    	res = 10000
+	    end
+	end
+	log("rank type "..ranktype.." : "..res)
+	return res
+end
+
 
 local function get_playerrank(ranktype)
 	local res
@@ -352,12 +387,6 @@ local function create_rank_for_player()
     skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,t_count+1,""..player.basic.playerid)
 end
 
-
-local function update_task(thetask)
-	send_package(send_request("update_task",{
-	    task = thetask
-	}))
-end
 
 function REQUEST:get()
 	print("get", self.what)
@@ -433,6 +462,9 @@ function REQUEST:login()
     
     taskmgr:set_player(player)
     statmgr:set_player(player)
+    itemmgr:set_player(player)
+   -- log(dump(player))
+    log("player fight power "..fp_cal:get_player_fightpower(player))
 
 	return { result = 1 }
 end
@@ -537,11 +569,12 @@ function REQUEST:pass_level()
 	return { result = 1 }
 end
 
+-- do not need to set fp any more 
 function REQUEST:set_fightpower()
-	log("fightpower"..self.fightpower..","..redis_name_tbl[self.type]..","..player.basic.playerid)
+	-- log("fightpower"..self.fightpower..","..redis_name_tbl[self.type]..","..player.basic.playerid)
 
-	local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
-		  ""..player.basic.playerid)
+	-- local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
+	-- 	  ""..player.basic.playerid)
 	return { result = 1 }
 end
 
@@ -550,6 +583,7 @@ function REQUEST:set_player_soul()
 	for i,v in pairs(self.souls) do
 		player.souls[v.soulid] = v
 	end
+	sync_fight_data_to_redis()
 	return { result = 1}
 end
 
@@ -587,20 +621,21 @@ end
 
 function REQUEST:strengthen_item()
     if have_enough_gold(self.gold) and have_enough_stone(self.stone) and 
-       have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
-       print ("strengthen_item"..dump(self.item))
+        have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
+        print ("strengthen_item"..dump(self.item))
+ 
+        add_gold(-self.gold)
+        add_diamond(-self.diamond)
+        add_stone(-self.stone)
+        update_item(self.item)
+        sync_fight_data_to_redis()
 
-       add_gold(-self.gold)
-       add_diamond(-self.diamond)
-       add_stone(-self.stone)
-       update_item(self.item)
-
-       return { result = 1}
+        return { result = 1}
     end
 
     return { result = 0 }
 
-
+  
 end
 
 function REQUEST:upgrade_item()
@@ -610,7 +645,7 @@ function REQUEST:upgrade_item()
 	   add_gold(-self.gold)
 	   add_diamond(-self.diamond)
 	   update_item(self.item)
-
+       sync_fight_data_to_redis()
 	   return { result = 1}
 	end
 
@@ -692,11 +727,46 @@ function REQUEST:add_offline_reward()
 	return { result = 1 }
 end
 
+-- function REQUEST:get_fight_data()
+-- 	local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",self.playerid.."_data")
+--     local _,fight_data = pcall(load("return "..fight_data_str))
+--     return { fightdata = fight_data }
+--  	-- body
+-- end
+
 function REQUEST:get_fight_data()
-	local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",self.playerid.."_data")
-    local _,fight_data = pcall(load("return "..fight_data_str))
-    return { fightdata = fight_data }
- 	-- body
+
+    
+
+    local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",player.basic.playerid.."_data")
+    local _,player_data = pcall(load("return "..fight_data_str))
+
+  
+    local ids 
+    local playerrank
+    local enemyrank = {}
+    if self.fight_type == 1 then
+    	ids = { 1000003 , 1000001 , 1000002} 
+    	playerrank = get_playerrank(3)
+    	for i,v in pairs(ids) do
+    		table.insert(enemyrank,get_rank(3,v))
+    	end
+    elseif self.fight_type == 2 then
+    	ids = { 1000004 , 1000001 , 1000002}
+    	playerrank = get_playerrank(4) 
+    	for i,v in pairs(ids) do
+    		table.insert(enemyrank,get_rank(3,v))
+    	end
+    end
+
+    local enemy_data = {}
+    for i,v in pairs(ids) do
+		local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",v.."_data")
+    	local _,fight_data = pcall(load("return "..fight_data_str))
+    	table.insert(enemy_data,fight_data)
+    end
+
+    return  {  player_data = player_data , enemy_data = enemy_data ,player_rank = playerrank ,enemy_rank = enemyrank} 
 end
 
 function REQUEST:set_fight_soul()
@@ -739,6 +809,16 @@ function REQUEST:collect_parachute()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
 	return { result = 1 }
+end
+
+function REQUEST:upgrade_diamond()
+	local res = itemmgr:upgrade_diamond(self.diamondid)
+	return { result = res and 1 or 0}
+end
+
+function REQUEST:item_add_hole()
+	local res = itemmgr:item_add_hole(self.itemid)
+	return { result = res and 1 or 0}
 end
 
 
@@ -855,6 +935,7 @@ function REQUEST:create_new_player()
     -- 0 means task for new player
     taskmgr:set_player(player)
     statmgr:set_player(player)
+    itemmgr:set_player(player)
     taskmgr:trigger_task(0)
 
     save_to_db()
@@ -975,5 +1056,5 @@ skynet.start(function()
 		end
 	end)
 	taskmgr:get_task_details(3)
-	fp_cal:get_soul_fightpower(3)
+	
 end)

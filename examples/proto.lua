@@ -13,6 +13,8 @@ proto.c2s = sprotoparser.parse [[
     itemtype 1 : integer    #物品类型
     itemextra 2: integer    #物品的额外属性
     itemcount 3: integer    #物品的数量
+    dia_hole_count 4 : integer #所开孔的数量
+    dia_id 5 : *integer # 宝石的ids 
 }
 
 .player_basic {    #玩家基础数据
@@ -34,10 +36,17 @@ proto.c2s = sprotoparser.parse [[
     score 3 : integer         #分数
 }
 
+
+.skill {
+    skillid 0 : integer
+    level 1 : integer
+}
+
 .soul {            #魂的信息
     soulid 0: integer      #魂的id(1~12)
     itemids 1: *integer    #魂的每个部位对应装备id
     soul_girl_id 2 :integer  #魂的武器娘id
+    skill 3 : *skill # 技能 
 }
 
 .fightdata {  #玩家战斗信息
@@ -181,6 +190,9 @@ pass_level 14 {
     }
 }
 
+
+
+
 #设置灵魂
 set_player_soul 15 {
     request {
@@ -227,6 +239,10 @@ get_server_time 19 {
     }
 }
 
+
+
+
+
 #领取奖励
 get_task_reward 20 {
     request {
@@ -265,10 +281,14 @@ set_fightpower 22{
 #获取玩家的战斗信息(用于玩家对战)
 get_fight_data 23 {
     request {
-        playerid 0 : integer
+        fight_type 0 : integer  #type 1 1v1 3 3v3
     }
     response {
-        fightdata 0 : fightdata
+        enemy_data 0 : *fightdata
+        player_data 1 : fightdata
+        enemy_rank 2 : *integer
+        player_rank 3 : integer
+
     }
 }
 
@@ -280,6 +300,8 @@ set_cur_stayin_level 24 {
         result 0 : integer #1成功0失败
     }
 }
+
+
 
 strengthen_item 25 {
     request {
@@ -390,6 +412,26 @@ collect_parachute 34 {
         result 0 : integer # 1 success 0 failed
     }
 }
+
+
+upgrade_diamond 35 {
+    request {
+        diamondid 0 :integer
+    }    
+    response {
+        result 0 : integer # 1 success 0 failed
+    }
+}
+
+item_add_hole 36 {
+    request {
+        itemid 0 : integer
+    }
+    response {
+        result 0 : integer # 1 success 0 failed
+    }
+}
+
 
 
 

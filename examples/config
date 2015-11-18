@@ -15,11 +15,11 @@ preload = "./common/preload.lua"	-- run preload.lua before every lua service run
 snax = root.."examples/?.lua;"..root.."test/?.lua"
 -- snax_interface_g = "snax_g"
 cpath = root.."cservice/?.so"
-daemon = "./skynet.pid"
+--daemon = "./skynet.pid"
 
 lua_path = "./lualib/?.lua;./lualib/?/init.lua;./common/?.lua;./gamelogic/lua_for_server/?.lua;./?.lua"
 
-add_robot = false
+--add_robot = true 
 
 redis_addr = "127.0.0.1"
 redis_port = 6379

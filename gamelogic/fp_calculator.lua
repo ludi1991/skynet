@@ -90,7 +90,7 @@ function fp_calculator:get_soul_fightpower(player,soulid)
 		end
 	end
 	local character = modelManager:generateCharacter(playerbasic.level, soulid, items)
-	return character.power
+	return math.floor(character.power)
 end
 
 -- 所有武器娘的属性
@@ -100,11 +100,47 @@ function fp_calculator:get_player_fightpower(player)
 	local playersoul = player["souls"]
 	local items = {}
 	for k,v in pairs(playersoul) do
-		local character = self:get_soul_fightpower(player, v.soul_girl_id)
-		power = power + character.power
+		local character_power = self:get_soul_fightpower(player, k)
+		power = power + character_power
 	end
 	return power
 end
+
+function fp_calculator:get_1v1_fightpower(player)
+	if player.config.soulid_1v1 ~= nil then	
+		return self:get_soul_fightpower(player,player.config.soulid_1v1)
+	else
+		return 0
+	end
+end
+
+function fp_calculator:get_3v3_fightpower(player)
+	local power = 0
+	for i,v in pairs(player.config.soulid_3v3) do
+		if player.souls[v] ~= nil then
+        	power = power + self:get_soul_fightpower(player,i)
+        end
+	end
+	return power
+end
+
+function fp_calculator:get_highest_fightpower(player)
+	local power = -1
+	local soulid = -1
+	for i,v in pairs(player.souls) do
+		local p = self:get_soul_fightpower(player,i)
+		if p > power then
+		    power = p
+		    soulid = i
+		end 
+	end
+    return power,soulid
+end
+
+function fp_calculator:update_all_fp(player)
+
+end
+
 
 
 
