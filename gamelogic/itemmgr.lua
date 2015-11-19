@@ -96,17 +96,45 @@ function itemmgr:upgrade_diamond(itemtype)
 	end
 end
 
+
 function itemmgr:item_add_hole(itemid)
     if self:have_item(itemid) then
-    	local hole_count = self.items[itemid].dia_hole_count or 0
-    	self.items[itemid].dia_hole_count = hole_count + 1
+    	if not self.items[itemid].dia_id then
+    		self.items[itemid].dia_id = {}
+    	end
+    	local next_hole = #(self.items[itemid].dia_id) + 1
+    	self.items[itemid].dia_id[next_hole] = -1
         return true
     else
     	return false
     end
 end
 
-function itemmgr:add_stone(count)
+function itemmgr:item_inset_diamond(itemid,dia_type,dia_hole_pos)
+	if self:have_item(itemid) == false then return false end
+	if self:have_item(dia_type) == false then return false end
+	if self.items[itemid].dia_id[dia_hole_pos] ~= nil then
+		self.items[itemid].dia_id[dia_hole_pos] = dia_type
+		return true
+	else 
+		return false
+	end
+
+end
+
+function itemmgr:item_pry_up_diamond(itemid,dia_hole_pos)
+	if self:have_item(itemid) == false then return false end
+	for i,v in pairs(dia_hole_pos) do
+		if self.items[itemid].dia_id[v] == nil then
+			return false
+		end
+	end
+
+	for i,v in pairs(dia_hole_pos) do
+		self:add_item(self.items[itemid].dia_id[v],1)
+		self.items[itemid].dia_id[v] = -1
+		return true
+	end
 
 end
 

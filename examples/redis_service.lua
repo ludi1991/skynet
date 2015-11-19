@@ -59,8 +59,8 @@ local function addrobot()
                         } ,
                         one_vs_one_items = 
                         {  
-                            { itemid = 1, itemtype = 1101010 , itemextra = 0 , itemcount = 1} , 
-                            { itemid = 2 , itemtype = 1101010 , itemextra = 0 ,itemcount = 1} , 
+                            { itemid = 1, itemtype = 2010101 , itemextra = 0 , itemcount = 1} , 
+                            { itemid = 2 , itemtype = 2010102 , itemextra = 0 ,itemcount = 1} , 
                         } ,
 
                         three_vs_three_souls = 

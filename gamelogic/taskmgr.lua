@@ -142,12 +142,13 @@ end
 
 
 function taskmgr:check_condition(type,...)
-	log ("taskmgr check_condition"..type)
+	log ("taskmgr check_condition : "..type)
     return self.condition_checker[type](self,...)
 end
 
 -----------------  条件检测
 function taskmgr:have_get_enough_level(level)
+	log("checking have get enough level")
 	return self.player.basic.level > level
 end
 

@@ -65,7 +65,7 @@ function log(msg,level)
     if level == nil then level = "debug" end
     local info = debug.getinfo(2)
     if info then
-        msg = string.format("[%s][%s:%d] %s",level ,info.short_src, info.currentline, msg)
+        msg = string.format("------[%s][%s:%d] %s",level ,info.short_src, info.currentline, msg)
     end
     print (msg)
 end

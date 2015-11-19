@@ -13,8 +13,7 @@ proto.c2s = sprotoparser.parse [[
     itemtype 1 : integer    #物品类型
     itemextra 2: integer    #物品的额外属性
     itemcount 3: integer    #物品的数量
-    dia_hole_count 4 : integer #所开孔的数量
-    dia_id 5 : *integer # 宝石的ids 
+    dia_id 4 : *integer # 宝石的ids 
 }
 
 .player_basic {    #玩家基础数据
@@ -432,6 +431,28 @@ item_add_hole 36 {
     }
 }
 
+#镶嵌宝石（如果位置有宝石就替换）
+item_inset_diamond 37 {
+    request {
+        itemid 0 : integer
+        dia_type 1 : integer
+        dia_hole_pos 2 : integer
+    }
+    response {
+        result 0 : integer 
+    }
+}
+
+#撬宝石（可以撬多个）
+item_pry_up_diamond 38 {
+    request {
+        itemid 0 : integer
+        dia_hole_pos 1 : *integer
+    }
+    response {
+        result 0 : integer
+    }
+}
 
 
 

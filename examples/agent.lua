@@ -653,6 +653,7 @@ function REQUEST:upgrade_item()
 end
 
 function REQUEST:melt_item()
+
 	for _,id in pairs(self.itemids) do
 		if have_item(id) == false then return { result = 0 } end
 	end
@@ -687,8 +688,11 @@ end
 
 
 function REQUEST:fight_with_player_result()
+	log("enter fight_with_player_result")
     unlock_fight_player(player.basic.playerid,self.fighttype)
+    log("come_here1")
     unlock_fight_player(self.enemyid,self.fighttype)
+    log("come_here2")
     if self.result == 1 then  -- win
     	local playerrank = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[2+self.fighttype],player.basic.playerid)
     	local enemyrank = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[2+self.fighttype],self.enemyid)
@@ -697,6 +701,7 @@ function REQUEST:fight_with_player_result()
     	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[2+self.fighttype],enemyrank,""..player.basic.playerid)
     	return { result = 1 }
     elseif self.result == 0 then -- lose
+    	log("come here!")
     	return { result = 1 }
     end
 end
@@ -737,7 +742,6 @@ end
 function REQUEST:get_fight_data()
 
     
-
     local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",player.basic.playerid.."_data")
     local _,player_data = pcall(load("return "..fight_data_str))
 
@@ -794,16 +798,6 @@ function REQUEST:get_fight_player_ids()
 	}
 end
 
--- collect_parachute 34 {
---     request {
---         gold 0 : integer
---         diamond 1 : integer
---     }
---     response {
---         result 0 : integer # 1 success 0 failed
---     }
--- }
-
 
 function REQUEST:collect_parachute()
 	add_gold(self.gold)
@@ -818,6 +812,18 @@ end
 
 function REQUEST:item_add_hole()
 	local res = itemmgr:item_add_hole(self.itemid)
+	return { result = res and 1 or 0}
+end
+
+function REQUEST:item_inset_diamond()
+	local res = itemmgr:item_inset_diamond(self.itemid,self.dia_type,self.dia_hole_pos)
+	sync_fight_data_to_redis()
+	return { result = res and 1 or 0}
+end
+
+function REQUEST:item_pry_up_diamond()
+	local res = itemmgr:item_pry_up_diamond(self.itemid,self.dia_hole_pos)
+	sync_fight_data_to_redis()
 	return { result = res and 1 or 0}
 end
 
