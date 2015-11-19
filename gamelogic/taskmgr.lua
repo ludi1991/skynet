@@ -109,7 +109,11 @@ end
 -- get reward for a task
 function taskmgr:get_reward(taskid)
 	local details = task_data[taskid]
-	local item = { itemtype = details.extra_reward_taget , itemcount = extra_reward_num}
+
+	local item = nil
+	if details.extra_reward_taget ~= nil then
+	    item = { itemtype = details.extra_reward_taget , itemcount = extra_reward_num}
+	end
 	return details.gold,details.diamond,item
 end
 
@@ -118,6 +122,12 @@ function taskmgr:generate_tasks(save_tbl)
 	local res = {}
     for i,v in pairs(save_tbl) do
     	data = task_data[i]
+        
+        local items = nil
+        if data.extra_reward_taget ~= nil then
+            items = { { itemid = 0 , itemtype = data.extra_reward_taget , itemextra = 0 , itemcount = data.extra_reward_num } }
+        end
+
     	local task = {
             taskid = v.taskid,
             type = 1,
@@ -127,7 +137,7 @@ function taskmgr:generate_tasks(save_tbl)
             gold = data.gold,
             diamond = data.diamond,
             percent = v.percent,
-            items = { { itemid = 0 , itemtype = data.extra_reward_taget , itemextra = 0 , itemcount = data.extra_reward_num } }
+            items = items 
     	}
 
 

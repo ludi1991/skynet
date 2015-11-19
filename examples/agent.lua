@@ -59,25 +59,18 @@ local function have_item(itemid)
 end
 
 -- 增加或减少金币
-local function add_gold(value)
-	if player.basic == nil then
-		print ("add_gold : player basic not exist")
-		return false
-	else
-		if player.basic.gold + value < 0 then
-		    print ("not enough gold")
-		    return false
-		else 
-            player.basic.gold = player.basic.gold + value
-            if value < 0 then
-            	
-            	statmgr:add_gold_consumed(-value)
-            	
-            	taskmgr:update_tasks_by_condition_type(5)
-            	
-            end
-		    return true
+local function add_gold(value)	
+	if player.basic.gold + value < 0 then
+	    print ("not enough gold")
+	    return false
+	else 
+        player.basic.gold = player.basic.gold + value
+        if value < 0 then           	
+        	statmgr:add_gold_consumed(-value)         	
+        	taskmgr:update_tasks_by_condition_type(5)
+  	
         end
+	    return true
     end
 end
 
@@ -128,12 +121,12 @@ local function update_item(item)
 end
 
 
-local function sync_fight_data_to_redis()
+local function set_sync_redis_flag()
 	redis_need_sync = true
 end
 
 --同步战斗数据到redis
-local function sync_fight_data_to_redis_real()
+local function sync_fight_data_to_redis()
 	local single_fp = fp_cal:get_highest_fightpower(player)
 	local team_fp = fp_cal:get_player_fightpower(player)
 	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[1],single_fp,""..player.basic.playerid)
@@ -370,7 +363,7 @@ function REQUEST:login()
     	player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
     end
     --compatible_with_old_data()
-	sync_fight_data_to_redis()
+	set_sync_redis_flag()
 
     log ("player "..player.playerid.." is initalized!","info")
    -- log (dump(player),"info")
@@ -385,7 +378,7 @@ function REQUEST:login()
 		while true do
 			if redis_need_sync then
 				log ("sync data to redis!")
-				sync_fight_data_to_redis_real()
+				sync_fight_data_to_redis()
 			    redis_need_sync = false
 			end
 			skynet.sleep(1000)
@@ -501,7 +494,7 @@ function REQUEST:set_player_soul()
 	for i,v in pairs(self.souls) do
 		player.souls[v.soulid] = v
 	end
-	sync_fight_data_to_redis()
+	set_sync_redis_flag()
 	return { result = 1}
 end
 
@@ -518,13 +511,24 @@ function REQUEST:get_task_reward()
     if player.tasks[id] ~= nil then
     	taskmgr:finish_task(id)
     	local gold,diamond,item = taskmgr:get_reward(id)
-    	add_gold(gold)
-    	add_diamond(diamond)
-    	local item = itemmgr:add_item(item.itemtype,item.itemcount)
+    	if gold ~= nil then
+    		add_gold(gold)
+    	end
+
+    	if diamond ~= nil then
+    		add_diamond(diamond)
+    	end
+        
+        local items = nil    
+    	if item ~= nil then
+    		local item = itemmgr:add_item(item.itemtype,item.itemcount)
+    		items = { item }
+    	end
+
     	return {
             gold = gold,
             diamond = diamond,
-            items = { item },
+            items = items,
         }
     else
     	log("no task!")
@@ -545,7 +549,7 @@ function REQUEST:strengthen_item()
         add_diamond(-self.diamond)
         itemmgr:add_stone(-self.stone)
         update_item(self.item)
-        sync_fight_data_to_redis()
+        set_sync_redis_flag()
 
         return { result = 1}
     end
@@ -562,7 +566,7 @@ function REQUEST:upgrade_item()
 	   add_gold(-self.gold)
 	   add_diamond(-self.diamond)
 	   update_item(self.item)
-       sync_fight_data_to_redis()
+       set_sync_redis_flag()
 	   return { result = 1}
 	end
 
@@ -698,10 +702,10 @@ function REQUEST:set_fight_soul()
 
     if self.type == 1 then
     	player.player_config.soulid_1v1 = self.soulid[1]
-    	sync_fight_data_to_redis()
+    	set_sync_redis_flag()
     elseif self.type == 2 then
     	player.player_config.soulid_3v3 = self.soulid
-    	sync_fight_data_to_redis()
+    	set_sync_redis_flag()
     end
     return { result = 1 }
 end
@@ -734,13 +738,13 @@ end
 
 function REQUEST:item_inset_gem()
 	local res = itemmgr:item_inset_gem(self.itemid,self.gem_type,self.gem_hole_pos)
-	sync_fight_data_to_redis()
+	set_sync_redis_flag()
 	return { result = res and 1 or 0}
 end
 
 function REQUEST:item_pry_up_gem()
 	local res = itemmgr:item_pry_up_gem(self.itemid,self.gem_hole_pos)
-	sync_fight_data_to_redis()
+	set_sync_redis_flag()
 	return { result = res and 1 or 0}
 end
 
