@@ -99,40 +99,6 @@ local function add_diamond(value)
     end
 end
 
---增加或减少强化石
-local function add_stone(value)
-	if player.items == nil then
-		print ("player item not exist")
-		return false
-	else
-	    if player.items[1000001] == nil then
-	    	player.items[1000001] = { itemid = 1000001 ,
-	    	                          itemtype = 1000001,
-	    	                          itemextra = 0,
-	    	                          itemcount = value}
-	    else
-	    	player.items[1000001].itemcount = player.items[1000001].itemcount + value
-	    end
-	    return true
-	end
-end
-
---删除物品
-local function remove_item(itemid,count)
-	if player.items[itemid] ~= nil then
-        if count == nil then
-        	player.items[itemid] = nil
-        else
-        	player.items[itemid].itemcount = player.items[itemid].itemcount - count
-        	if player.items[itemid].itemcount <= 0 then
-        		player.items[itemid] = nil
-        	end
-        end
-        return true
-    end
-    log ("remove_item failed")
-    return false
-end
 
 local function add_item(item)
 	if player.items ~= nil then
@@ -148,62 +114,6 @@ local function add_item(item)
 	return false
 end
 
--- add an item without id
-local item_can_stack_ids = {
-	[1000001] = "true"
-}
-
-local function item_can_stack(itemtype)
-    return item_can_stack_ids[itemtype] ~= nil
-end
-
--- 是否有某种类型的装备
-local function have_item_by_itemtype(itemtype)
-	for i,v in pairs(player.items) do
-		if v.itemtype == itemtype then
-			return true,i
-		end
-	end
-	return false
-end
-
-local function generate_new_item_id()
-	return #player.items+1
-end
-
-
-local function add_item_autoid(itemtype,itemextra,count)
-
-    if player.items ~= nil then
-		if item_can_stack(itemtype) then
-			local have,id = have_item_by_itemtype(itemtype)
-			if have then
-				player.items[id].itemcount = player.items[id].itemcount + count
-				return id
-			else
-				local newid = generate_new_item_id()
-				player.items[newid] = {
-                    itemid = newid,
-                    itemtype = itemtype,
-                    itemextra = itemextra,
-                    itemcount = count,
-				}
-				log(dump(player.items[newid]))
-				return newid
-			end
-		else
-            local newid = generate_new_item_id()
-            player.items[newid] = {
-                    itemid = newid,
-                    itemtype = itemtype,
-                    itemextra = itemextra,
-                    itemcount = count,
-				}
-			log("add_item_autoid"..dump(player.items[newid]))
-			return newid
-		end
-	end
-end
 
 local function update_item(item)
 	if have_item(item.itemid) == false then
@@ -569,14 +479,6 @@ function REQUEST:pass_level()
 	return { result = 1 }
 end
 
--- do not need to set fp any more 
-function REQUEST:set_fightpower()
-	-- log("fightpower"..self.fightpower..","..redis_name_tbl[self.type]..","..player.basic.playerid)
-
-	-- local res = skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[self.type],self.fightpower,
-	-- 	  ""..player.basic.playerid)
-	return { result = 1 }
-end
 
 function REQUEST:set_player_soul()
 	if not self.souls then return { result = 1 }end
@@ -602,12 +504,11 @@ function REQUEST:get_task_reward()
     	local gold,diamond,item = taskmgr:get_reward(id)
     	add_gold(gold)
     	add_diamond(diamond)
-    	--local itemid = add_item_autoid(item.itemtype,item.itemextra,item.itemcount)
-    	--item.itemid = itemid
+    	local item = itemmgr:add_item(item.itemtype,item.itemcount)
     	return {
             gold = gold,
             diamond = diamond,
-         --   items = { item },
+            items = { item },
         }
     else
     	log("no task!")
@@ -626,7 +527,7 @@ function REQUEST:strengthen_item()
  
         add_gold(-self.gold)
         add_diamond(-self.diamond)
-        add_stone(-self.stone)
+        itemmgr:add_stone(-self.stone)
         update_item(self.item)
         sync_fight_data_to_redis()
 
@@ -659,11 +560,11 @@ function REQUEST:melt_item()
 	end
     
     for _,id in pairs(self.itemids) do
-    	remove_item(id)
+    	itemmgr:delete_item(id)
     end
     
     add_item(self.newitem)
-    add_stone(self.stone)
+    itemmgr:add_stone(self.stone)
 
     statmgr:add_melt_times(1)
     taskmgr:update_tasks_by_condition_type(11)
@@ -678,7 +579,7 @@ function REQUEST:sell_item()
 	end
     
     for _,id in pairs(self.itemids) do
-    	remove_item(id)
+    	itemmgr:delete_item(id)
     end
 
     add_gold(self.gold[1])
@@ -805,8 +706,8 @@ function REQUEST:collect_parachute()
 	return { result = 1 }
 end
 
-function REQUEST:upgrade_diamond()
-	local res = itemmgr:upgrade_diamond(self.diamondid)
+function REQUEST:upgrade_gem()
+	local res = itemmgr:upgrade_gem(self.diamondid)
 	return { result = res and 1 or 0}
 end
 
@@ -815,17 +716,27 @@ function REQUEST:item_add_hole()
 	return { result = res and 1 or 0}
 end
 
-function REQUEST:item_inset_diamond()
-	local res = itemmgr:item_inset_diamond(self.itemid,self.dia_type,self.dia_hole_pos)
+function REQUEST:item_inset_gem()
+	local res = itemmgr:item_inset_gem(self.itemid,self.gem_type,self.gem_hole_pos)
 	sync_fight_data_to_redis()
 	return { result = res and 1 or 0}
 end
 
-function REQUEST:item_pry_up_diamond()
-	local res = itemmgr:item_pry_up_diamond(self.itemid,self.dia_hole_pos)
+function REQUEST:item_pry_up_gem()
+	local res = itemmgr:item_pry_up_gem(self.itemid,self.gem_hole_pos)
 	sync_fight_data_to_redis()
 	return { result = res and 1 or 0}
 end
+
+function REQUEST:new_pass_level()
+end
+
+function REQUEST:new_pass_boss_level()
+end
+
+
+
+
 
 
 

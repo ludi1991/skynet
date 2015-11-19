@@ -109,7 +109,7 @@ end
 -- get reward for a task
 function taskmgr:get_reward(taskid)
 	local details = task_data[taskid]
-	local item = { itemid = details.extra_reward_taget , itemcount = extra_reward_num}
+	local item = { itemtype = details.extra_reward_taget , itemcount = extra_reward_num}
 	return details.gold,details.diamond,item
 end
 

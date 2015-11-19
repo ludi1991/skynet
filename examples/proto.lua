@@ -13,7 +13,7 @@ proto.c2s = sprotoparser.parse [[
     itemtype 1 : integer    #物品类型
     itemextra 2: integer    #物品的额外属性
     itemcount 3: integer    #物品的数量
-    dia_id 4 : *integer # 宝石的ids 
+    gem_id 4 : *integer # 宝石的ids 
 }
 
 .player_basic {    #玩家基础数据
@@ -240,8 +240,6 @@ get_server_time 19 {
 
 
 
-
-
 #领取奖励
 get_task_reward 20 {
     request {
@@ -266,16 +264,6 @@ pass_boss_level 21 {
     }
 }
 
-#设置玩家战斗力
-set_fightpower 22{
-    request {
-        fightpower 0 : integer
-        type 1 :integer #1 单独武器娘战斗力 2团队战斗力 
-    }
-    response {
-        result 0 : integer #1success0failed
-    }
-}
 
 #获取玩家的战斗信息(用于玩家对战)
 get_fight_data 23 {
@@ -413,7 +401,7 @@ collect_parachute 34 {
 }
 
 
-upgrade_diamond 35 {
+upgrade_gem 35 {
     request {
         diamondid 0 :integer
     }    
@@ -432,11 +420,11 @@ item_add_hole 36 {
 }
 
 #镶嵌宝石（如果位置有宝石就替换）
-item_inset_diamond 37 {
+item_inset_gem 37 {
     request {
         itemid 0 : integer
-        dia_type 1 : integer
-        dia_hole_pos 2 : integer
+        gem_type 1 : integer
+        gem_hole_pos 2 : integer
     }
     response {
         result 0 : integer 
@@ -444,14 +432,40 @@ item_inset_diamond 37 {
 }
 
 #撬宝石（可以撬多个）
-item_pry_up_diamond 38 {
+item_pry_up_gem 38 {
     request {
         itemid 0 : integer
-        dia_hole_pos 1 : *integer
+        gem_hole_pos 1 : *integer
     }
     response {
         result 0 : integer
     }
+}
+
+
+new_pass_level 39 {
+    request {
+        level 0 : integer  #第几关       
+    }
+    response {
+        result 0 : integer
+        items 1 : *item
+        gold 2 : integer
+        diamond 3 :integer
+    }
+}
+
+new_pass_boss_level 40 {
+    request {
+        level 0 : integer  #第几关       
+    }
+    response {
+        result 0 : integer
+        items 1 : *item
+        gold 2 : integer
+        diamond 3 :integer
+    }
+    
 }
 
 

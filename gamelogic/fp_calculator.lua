@@ -137,10 +137,6 @@ function fp_calculator:get_highest_fightpower(player)
     return power,soulid
 end
 
-function fp_calculator:update_all_fp(player)
-
-end
-
 
 
 
