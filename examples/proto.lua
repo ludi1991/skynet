@@ -35,7 +35,6 @@ proto.c2s = sprotoparser.parse [[
     score 3 : integer         #分数
 }
 
-
 .skill {
     skillid 0 : integer
     level 1 : integer

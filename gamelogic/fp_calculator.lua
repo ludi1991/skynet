@@ -65,7 +65,6 @@ local equipData    = require "data.equipdata"
 
 --单个武器娘属性   
 function fp_calculator:get_soul_fightpower(player,soulid)
-	log ("get_soul_fightpower")
 	local playerbasic = player["basic"]
 	local playersoul = player["souls"]
 	local items = {}
@@ -95,7 +94,6 @@ end
 
 -- 所有武器娘的属性
 function fp_calculator:get_player_fightpower(player)
-	log ("get_player_fightpower")
 	local power = 0
 	local playersoul = player["souls"]
 	local items = {}

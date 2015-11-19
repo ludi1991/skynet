@@ -19,6 +19,8 @@ local client_fd
 
 local player = {}
 
+local redis_need_sync = false
+
 local redis_single_fp_name = "fp_single_rank"
 local redis_team_fp_name = "fp_team_rank"
 local redis_1v1_name = "1v1_rank"
@@ -125,10 +127,13 @@ local function update_item(item)
 
 end
 
---同步战斗数据到redis
+
 local function sync_fight_data_to_redis()
+	redis_need_sync = true
+end
 
-
+--同步战斗数据到redis
+local function sync_fight_data_to_redis_real()
 	local single_fp = fp_cal:get_highest_fightpower(player)
 	local team_fp = fp_cal:get_player_fightpower(player)
 	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[1],single_fp,""..player.basic.playerid)
@@ -375,6 +380,17 @@ function REQUEST:login()
     itemmgr:set_player(player)
    -- log(dump(player))
     log("player fight power "..fp_cal:get_player_fightpower(player))
+
+    skynet.fork(function()
+		while true do
+			if redis_need_sync then
+				log ("sync data to redis!")
+				sync_fight_data_to_redis_real()
+			    redis_need_sync = false
+			end
+			skynet.sleep(1000)
+		end
+    end)
 
 	return { result = 1 }
 end

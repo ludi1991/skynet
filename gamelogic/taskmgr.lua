@@ -127,7 +127,7 @@ function taskmgr:generate_tasks(save_tbl)
             gold = data.gold,
             diamond = data.diamond,
             percent = v.percent,
-            items = { { itemid = 0 , itemtype = data.extra_reward_taget , itemextra = 0 , itemcount = extra_reward_num } }
+            items = { { itemid = 0 , itemtype = data.extra_reward_taget , itemextra = 0 , itemcount = data.extra_reward_num } }
     	}
 
 
