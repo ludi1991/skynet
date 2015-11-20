@@ -611,9 +611,7 @@ end
 function REQUEST:fight_with_player_result()
 	log("enter fight_with_player_result")
     unlock_fight_player(player.basic.playerid,self.fighttype)
-    log("come_here1")
     unlock_fight_player(self.enemyid,self.fighttype)
-    log("come_here2")
     if self.result == 1 then  -- win
     	local playerrank = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[2+self.fighttype],player.basic.playerid)
     	local enemyrank = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[2+self.fighttype],self.enemyid)
@@ -622,7 +620,6 @@ function REQUEST:fight_with_player_result()
     	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[2+self.fighttype],enemyrank,""..player.basic.playerid)
     	return { result = 1 }
     elseif self.result == 0 then -- lose
-    	log("come here!")
     	return { result = 1 }
     end
 end
@@ -743,6 +740,7 @@ function REQUEST:item_inset_gem()
 end
 
 function REQUEST:item_pry_up_gem()
+	log ("item_pry"..dump(self.gem_hole_pos))
 	local res = itemmgr:item_pry_up_gem(self.itemid,self.gem_hole_pos)
 	set_sync_redis_flag()
 	return { result = res and 1 or 0}

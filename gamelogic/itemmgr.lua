@@ -11,7 +11,8 @@ end
 
 
 function itemmgr:can_stack(itemtype)
-	if itemid == 1000001 then return true end
+	--if itemid == 1000001 then return true end
+	if itemtype < 2000000 then return true end
 	return false
 end
 
@@ -129,13 +130,13 @@ function itemmgr:item_pry_up_gem(itemid,gem_hole_pos)
 			return false
 		end
 	end
-
+    
 	for i,v in pairs(gem_hole_pos) do
+		log ("itemgmr",v)
 		self:add_item(self.items[itemid].gem_id[v],1)
 		self.items[itemid].gem_id[v] = -1
-		return true
 	end
-
+    return true;
 end
 
 function itemmgr:add_stone(value)
