@@ -991,5 +991,4 @@ skynet.start(function()
 		end
 	end)
 	taskmgr:get_task_details(3)
-	
 end)
