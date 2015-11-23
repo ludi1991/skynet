@@ -74,7 +74,6 @@ end
 
 
 function itemmgr:have_item(itemid,count)
-	--log(itemid)
 	count = count or 1
 	if self.items[itemid] ~= nil and self.items[itemid].itemcount >= count then
 		return true
@@ -132,7 +131,6 @@ function itemmgr:item_pry_up_gem(itemid,gem_hole_pos)
 	end
     
 	for i,v in pairs(gem_hole_pos) do
-		log ("itemgmr",v)
 		self:add_item(self.items[itemid].gem_id[v],1)
 		self.items[itemid].gem_id[v] = -1
 	end
