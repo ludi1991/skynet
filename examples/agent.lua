@@ -609,12 +609,6 @@ function REQUEST:add_offline_reward()
 	return { result = 1 }
 end
 
--- function REQUEST:get_fight_data()
--- 	local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",self.playerid.."_data")
---     local _,fight_data = pcall(load("return "..fight_data_str))
---     return { fightdata = fight_data }
---  	-- body
--- end
 
 function REQUEST:get_fight_data()
 
@@ -706,12 +700,45 @@ function REQUEST:item_pry_up_gem()
 end
 
 function REQUEST:new_pass_level()
+
 end
 
 function REQUEST:new_pass_boss_level()
 end
 
+--- lab
 
+function REQUEST:lab_register()
+	return labmgr:lab_register()
+end
+
+function REQUEST:lab_start_hourglass()
+	return labmgr:lab_start_hourglass(self.hourglassid,self.sandtype)
+end
+
+function REQUEST:lab_help_friend()
+    return labmgr:lab_help_friend(self.friendid)
+end
+
+function REQUEST:lab_get_data()
+	return labmgr:lab_get_data(self.playerid)
+end
+
+function REQUEST:lab_match_player()
+	return labmgr:lab_match_player()
+end
+
+function REQUEST:lab_steal()
+	return labmgr:lab_steal(self.playerid)
+end
+
+function REQUEST:lab_harvest()
+	return labmgr:lab_harvest(self.glassid)
+end
+
+function REQUEST:lab_set_keeper()
+	return labmgr:lab_set_keeper(self.keeperid)
+end
 
 
 
