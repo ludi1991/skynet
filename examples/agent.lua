@@ -7,6 +7,7 @@ local ldqueue = require "skynet.ldqueue"
 local taskmgr = require "gamelogic.taskmgr"
 local statmgr = require "gamelogic.statmgr"
 local itemmgr = require "gamelogic.itemmgr"
+local labmgr = require "gamelogic.labmgr"
 local fp_cal = require "gamelogic.fp_calculator"
 
 local WATCHDOG
@@ -248,29 +249,6 @@ local function get_rank(ranktype,playerid)
 	return res
 end
 
-
-local function get_playerrank(ranktype)
-	local res
-    if ranktype == 1 or ranktype == 2 then
-	    res = skynet.call("REDIS_SERVICE","lua","proc","zrevrank",redis_name_tbl[ranktype],player.basic.playerid)
-	    if res then
-	    	res = res + 1
-	    else
-	    	res = 10000
-	    end
-	elseif ranktype == 3 or ranktype == 4 then
-	    res = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[ranktype],player.basic.playerid)
-		if res then
-			log(res)
-	    	res = tonumber(res) 
-	    else
-	    	res = 10000
-	    end
-	end
-	log("player rank type "..ranktype.." : "..res)
-	return res
-end
-
 local function lock_fight_player(playerid,type)
     skynet.call("REDIS_SERVICE","lua","proc","set",""..playerid.."_"..type.."_in_fight","working")
     skynet.call("REDIS_SERVICE","lua","proc","expire",""..playerid.."_"..type.."_in_fight",60)
@@ -286,13 +264,19 @@ local function is_player_in_fight(playerid,type)
 	return res ~= nil
 end
 
-local function create_rank_for_player()
-	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,1,""..player.basic.playerid)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,1,""..player.basic.playerid)
-    local o_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_1v1_name)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,o_count+1,""..player.basic.playerid)
-    local t_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_3v3_name)
-    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,t_count+1,""..player.basic.playerid)
+local function create_rank_for_player(thetype)
+	if thetype == 1 then
+		skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_single_fp_name,1,""..player.basic.playerid)
+	elseif thetype == 2 then
+	    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_team_fp_name,1,""..player.basic.playerid)
+	elseif thetype == 3 then
+	    local o_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_1v1_name)
+	    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,o_count+1,""..player.basic.playerid)
+	elseif thetype == 4 then
+	    local t_count = skynet.call("REDIS_SERVICE","lua","proc","zcard",redis_3v3_name)
+	    skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,t_count+1,""..player.basic.playerid)
+	end
+
 end
 
 
@@ -329,50 +313,24 @@ function REQUEST:get_player_basic()
 end
 
 function REQUEST:get_player_rank()
-	return { rank = get_playerrank(self.ranktype) , fightpower = get_player_fightpower(self.ranktype) }
+	return { rank = get_rank(self.ranktype,player.basic.playerid) , fightpower = get_player_fightpower(self.ranktype) }
 end
 
 function REQUEST:login()
-	log("login","info")
-	player.playerid = self.playerid
 
-	local sqlstr
-
-	sqlstr = "SELECT playerid,level,gold,diamond,nickname,last_login_time,create_time,cursoul,cur_stayin_level FROM L2.player_basic where playerid = "..player.playerid;
-	local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-	player.basic = res[1]
+    player = skynet.call("DATA_CENTER","lua","get_player_data",self.playerid)
 
 
-	local function get_data_from_mysql(player_tbl_name,mysql_tbl_name,playerid)
-        local sqlstr = "SELECT data FROM L2."..mysql_tbl_name.." where playerid = "..playerid;
-        local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-        if res and res[1] then
-        	_,player[player_tbl_name] = pcall(load("return "..res[1].data))
-        else
-        	log("login get_data_from_mysql failed :"..mysql_tbl_name.."playerid =".. playerid)
-        end
-	end
-
-	get_data_from_mysql("items","item_b",player.playerid)
-	get_data_from_mysql("souls","soul_b",player.playerid)
-	get_data_from_mysql("tasks","task_b",player.playerid)
-	get_data_from_mysql("config","player_config",player.playerid)
-
-
-    if player.config == nil then
-    	player.config = { soulid_1v1 = 1 ; soulid_3v3 = { 1,2,3 } }
-    end
-    --compatible_with_old_data()
 	set_sync_redis_flag()
 
-    log ("player "..player.playerid.." is initalized!","info")
-   -- log (dump(player),"info")
+    log ("player "..self.playerid.." is initalized!","info")
+    log(dump(player))
     
     taskmgr:set_player(player)
     statmgr:set_player(player)
     itemmgr:set_player(player)
-   -- log(dump(player))
-    log("player fight power "..fp_cal:get_player_fightpower(player))
+    labmgr:set_player(player)
+  
 
     skynet.fork(function()
 		while true do
@@ -385,6 +343,7 @@ function REQUEST:login()
 		end
     end)
 
+    skynet.call("ONLINE_CENTER","lua","set_online",self.playerid,skynet.self())
 	return { result = 1 }
 end
 
@@ -669,15 +628,15 @@ function REQUEST:get_fight_data()
     local enemyrank = {}
     if self.fight_type == 1 then
     	ids = { 1000003 , 1000001 , 1000002} 
-    	playerrank = get_playerrank(3)
+    	playerrank = get_rank(3,player.basic.playerid)
     	for i,v in pairs(ids) do
     		table.insert(enemyrank,get_rank(3,v))
     	end
     elseif self.fight_type == 2 then
     	ids = { 1000004 , 1000001 , 1000002}
-    	playerrank = get_playerrank(4) 
+    	playerrank = get_rank(4,player.basic.playerid) 
     	for i,v in pairs(ids) do
-    		table.insert(enemyrank,get_rank(3,v))
+    		table.insert(enemyrank,get_rank(4,v))
     	end
     end
 
@@ -708,8 +667,8 @@ function REQUEST:set_fight_soul()
 end
 
 function REQUEST:get_fight_player_ids()
-	local rank_o = get_playerrank(3)   -- 1v1 rankids
-	local rank_t = get_playerrank(4)
+	local rank_o = get_rank(3,player.basic.playerid)   -- 1v1 rankids
+	local rank_t = get_rank(4,player.basic.playerid)
 	return {
         one_vs_one_ids = { 103 , 1000001 , 1000002} ,
         three_vs_three_ids = { 103 , 1000001, 1000002 }
@@ -724,7 +683,7 @@ function REQUEST:collect_parachute()
 end
 
 function REQUEST:upgrade_gem()
-	local res = itemmgr:upgrade_gem(self.diamondid)
+	local res = itemmgr:upgrade_gem(self.diamondid,self.gold)
 	return { result = res and 1 or 0}
 end
 
@@ -760,77 +719,7 @@ end
 
 --落地数据到数据库
 local function save_to_db()
-    local theres = skynet.call("MYSQL_SERVICE","lua","query","SELECT playerid from L2.player_basic where playerid = "..player.basic.playerid)
-
-    if #theres == 0 then
-    	log ("first save this player !!","info")
-	    local name_str = ""
-	    local value_str = ""
-	    for i,v in pairs(player.basic) do
-            name_str = name_str.."`"..i.."`,"
-            value_str = value_str.."'"..v.."',"
-	    end
-	    name_str = string.sub(name_str,0,string.len(name_str)-1)
-	    value_str = string.sub(value_str,0,string.len(value_str)-1)
-	    local sqlstr = "INSERT INTO L2.player_basic ("..name_str..") VALUES ("..value_str..");"
-
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
-	    
-	    -- save itemdata to mysql
-	    local itemstr = dump(player.items,true)
-	    str = "INSERT INTO L2.item_b (playerid,data) values ('"..player.basic.playerid.."','"..itemstr.."');"
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-	    local soulstr = dump(player.souls,true)
-	    str = "INSERT INTO L2.soul_b (playerid,data) values ('"..player.basic.playerid.."','"..soulstr.."');"
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-	    local taskstr = dump(player.tasks,true)
-	    str = "INSERT INTO L2.task_b (playerid,data) values ('"..player.basic.playerid.."','"..taskstr.."');"
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-	    local configstr = dump(player.config,true)
-	    str = "INSERT INTO L2.player_config (playerid,data) values ('"..player.basic.playerid.."','"..configstr.."');"
-        local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-        
-    else
-    	log ("the player is exist,update mysql","info")
-        local tmp = ""
-        for i,v in pairs(player.basic) do
-        	tmp = tmp..i.."='"..v.."',"
-        end
-        tmp = string.sub(tmp,0,string.len(tmp)-1)
-    	local str = "UPDATE L2.player_basic set "..tmp.."where playerid =".. player.basic.playerid
-	    local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-
-	    local function update_mysql_table(player_table,mysql_table)
-	    	local thestr = dump(player[player_table],true)
-	        str = "UPDATE L2."..mysql_table.." SET data = '"..thestr.."' where playerid = "..player.basic.playerid;
-	        local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-	    end
-
-	    update_mysql_table("items","item_b")
-	    update_mysql_table("souls","soul_b")
-	    update_mysql_table("tasks","task_b")
-
-
-	    if player.config == nil then
-	    	-- config 是后加的，之前有的id没有
-	    	player.config = 
-		    {   
-		        soulid_1v1 = 1 , 
-		        soulid_3v3 = { 1,2,3 } ,
-		    }
-	    	local configstr = dump(player.config,true)
-	    	str = "INSERT INTO L2.player_config (playerid,data) values ('"..player.basic.playerid.."','"..configstr.."');"
-        	local res = skynet.call("MYSQL_SERVICE","lua","query",str)
-	    else
-	        update_mysql_table("config","player_config")
-	    end
-	
-    end
- 
+	local res = skynet.call("DATA_CENTER","lua","save_player_data",player)
 end
 
 function REQUEST:create_new_player()
@@ -850,8 +739,6 @@ function REQUEST:create_new_player()
         cur_stayin_level = 1,
     }
 
-    print (os.date())
-
     player.items = { }
     player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
     player.tasks = { } 
@@ -861,19 +748,21 @@ function REQUEST:create_new_player()
         soulid_3v3 = { 1,2,3 } ,
         finished_tasks = {} ,
     }
+    player.lab = { keeper = 1 , hourglass = {} , keys = 5 , help_list = {} , be_helped_list = {} }
     
 
     -- 战5渣 at first
-
-    create_rank_for_player()
+    for i=1,4 do create_rank_for_player(i) end
 
     -- 0 means task for new player
     taskmgr:set_player(player)
     statmgr:set_player(player)
     itemmgr:set_player(player)
+    labmgr:set_player(player)
     taskmgr:trigger_task(0)
 
     save_to_db()
+
 
     return { result = 1 , playerid = newplayerid }
 
@@ -978,6 +867,7 @@ function CMD.disconnect()
     --skynet.send("CHATROOM","lua","logout",skynet.self())
     player.basic.last_login_time = os.date("%Y-%m-%d %X")
     save_to_db()
+    skynet.call("ONLINE_CENTER","lua","set_offline",player.basic.playerid)
 	skynet.exit()
 end
 

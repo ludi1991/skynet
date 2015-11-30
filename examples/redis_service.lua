@@ -20,11 +20,15 @@ local conf = {
 local command = {}
 local db
 
-local redis_single_fp_name = "fp_single_rank"
-local redis_team_fp_name = "fp_team_rank"
-local redis_1v1_name = "1v1_rank"
-local redis_3v3_name = "3v3_rank"
 
+local function watching()
+    local w = redis.watch(conf)
+    w:subscribe "abcde"
+    w:psubscribe "hello.*"
+    while true do
+        print("Watch", w:message())
+    end
+end
 
 
 function command.PROC(func,...)
@@ -33,14 +37,10 @@ function command.PROC(func,...)
 end
 
 
-local function watching()
-    local w = redis.watch(conf)
-    w:subscribe "foo"
-    w:psubscribe "hello.*"
-    while true do
-        print("Watch", w:message())
-    end
-end
+local redis_single_fp_name = "fp_single_rank"
+local redis_team_fp_name = "fp_team_rank"
+local redis_1v1_name = "1v1_rank"
+local redis_3v3_name = "3v3_rank"
 
 local function addrobot()
     for i=1,100 do
@@ -89,7 +89,7 @@ local function addrobot()
 end
 
 skynet.start(function()
-    skynet.fork(watching)
+    
     db = redis.connect(conf)
     if not db then
         print ("redis_connection failed")
@@ -107,6 +107,7 @@ skynet.start(function()
     if skynet.getenv("add_robot") then
         addrobot()
     end
+    skynet.fork(watching)
     --print (db:zrange(redis_single_fp_name,0,2))
     
     -- db:del "C"

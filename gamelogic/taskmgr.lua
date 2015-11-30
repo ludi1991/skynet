@@ -131,7 +131,7 @@ function taskmgr:generate_tasks(save_tbl)
     	local task = {
             taskid = v.taskid,
             type = 1,
-            icon = 1,
+            icon = data.icon,
             title = data.name,
             descriptions = data.task_des,
             gold = data.gold,

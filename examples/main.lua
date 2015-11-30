@@ -8,11 +8,16 @@ skynet.start(function()
 	skynet.uniqueservice("protoloader")
 	local console = skynet.newservice("console")
 	skynet.newservice("debug_console",8000)
-	skynet.newservice("simpledb")
 	skynet.newservice("simplenews")
 	skynet.newservice("chatroom")
 	skynet.newservice("mysql_service")
 	skynet.newservice("redis_service")
+	skynet.newservice("shop_service")
+	skynet.newservice("robot")
+	skynet.newservice("player_data_center")
+	skynet.newservice("online_center")
+	skynet.newservice("lab_service")
+
 
 	local watchdog = skynet.newservice("watchdog")
 	skynet.call(watchdog, "lua", "start", {

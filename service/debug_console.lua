@@ -130,7 +130,13 @@ function COMMAND.help()
 		log = "launch a new lua service with log",
 		debug = "debug address : debug a lua service",
 		signal = "signal address sig",
+		addrobot = "addrobot",
+		dailyupdate = "update tasks everyday"
 	}
+end
+
+function COMMAND.dailyupdate()
+	skynet.call()
 end
 
 function COMMAND.clearcache()
@@ -198,6 +204,10 @@ end
 
 function COMMAND.exit(address)
 	skynet.send(adjust_address(address), "debug", "EXIT")
+end
+
+function COMMAND.addrobot(count)
+	skynet.call("ROBOT","lua","addrobot",count)
 end
 
 function COMMAND.inject(address, filename)

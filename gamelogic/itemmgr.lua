@@ -2,7 +2,7 @@ local itemmgr = {}
 
 itemmgr.items = {}
 
-local item_data = require "data.item_data"
+local item_data = require "data.equipdata"
 
 function itemmgr:set_player(player)
     self.player = player
@@ -39,7 +39,7 @@ function itemmgr:add_item(itemtype,count)
         if items[itemtype] == nil then
             items[itemtype] = {
                 itemid = itemtype,
-                itemtype = itemid,
+                itemtype = itemtype,
                 itemcount = count,
         	}
         	return items[itemtype]
@@ -84,9 +84,17 @@ end
 
 
 function itemmgr:upgrade_gem(itemtype)
-	if self:have_item(itemtype,2) then
-		if self:delete_item(itemtype,2) then
+    local gold = self:get_details(itemtype).price
+    local count = self:get_details(itemtype).upgrade_cost
+	if self.player.basic.gold < gold then
+		return false
+	end
+
+    
+	if self:have_item(itemtype,count) then
+		if self:delete_item(itemtype,count) then
 			self:add_item(itemtype+1,1)
+			self.player.basic.gold = self.player.basic.gold - gold
 			return true
 		else
 			return false

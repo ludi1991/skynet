@@ -14,6 +14,7 @@ if command.RAWLAUNCH then
 	print "restore command.LAUNCH"
 else
 	command.RAWLAUNCH = command.LAUNCH
-	command.LAUNCH = command.LOGLAUNCH
+	command.LAUNCH = command.LO
+	GLAUNCH
 	print "replace command.LAUNCH"
 end

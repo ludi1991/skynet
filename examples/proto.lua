@@ -72,6 +72,37 @@ proto.c2s = sprotoparser.parse [[
     percent 8: integer    #完成百分比
 }
 
+.hourglass {
+    playerid 0 : integer
+    glassid 1 : integer
+    sandtype 2 : integer
+    curtime 3 : integer
+    status 4 : integer
+    gold_loss 5 :integer
+}
+
+.labdata {
+    keeper 0 : integer #守护id
+    acc 1 : integer #加速等级，1代表时间缩短1%
+    
+    .friend {
+        playerid 0 : integer 
+        helped 1 : boolean
+    }
+
+    help_friend_list 2: *friend(playerid)
+
+    .be_attacked {
+        playerid 0 : integer
+        nickname 1 : string
+        lost 2 : integer
+    }
+    
+    be_attacked_list 3: *be_attacked(playerid) 
+    hourglass 4 : *hourglass(glassid)
+    
+}
+
 
 handshake 1 {
     response {
@@ -467,6 +498,81 @@ new_pass_boss_level 40 {
     
 }
 
+# 41 - 50 are lab rpcs
+
+lab_register 41 {
+    response {
+        result 0 : integer # 1success 0 failed
+    }
+}
+
+lab_start_hourglass 42 {
+    request {
+        hourglassid 0 : integer  
+        sandtype 1 : integer
+    }
+    response {
+        result 0: integer   #1success 0 failed
+    }
+}
+
+
+lab_help_friend 43 {
+    request {
+        friendid 0 : integer
+    }
+    response {
+        result 0 : integer #1success 0failed
+    }
+}
+
+lab_get_data 44 {
+    request {
+        playerid 0 : integer
+    }
+    response {
+        lab_data 0 : *labdata
+    }
+}
+
+lab_match_player 45 {
+    response {
+        playerid 0 : integer
+        nickname 1 : string
+        acc 2 : integer
+        hourglass 3 : *hourglass
+        soul 4 : soul 
+    }
+}
+
+lab_steal 46 {
+    request {
+        playerid 0 : integer
+    }   
+    response {
+        result 0 : integer #1success 0 failed
+        gold 1 : integer
+    }
+}
+
+lab_harvest 47 {
+    request {
+        glassid 0 : integer 
+    }
+    response {
+        result 0 : integer #1 success 0 failed 
+        gold 1 : integer
+    }
+}
+
+lab_set_keeper 48 {
+    request {
+        keeperid 0 : integer
+    }
+    response {
+        result 0: integer #1success 0 failed
+    }
+}
 
 
 ]]
