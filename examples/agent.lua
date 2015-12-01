@@ -562,7 +562,7 @@ function REQUEST:sell_item()
     end
 
     add_gold(self.gold[1])
-    return { result = 1}
+    return { result = 1 }
     
 end
 
@@ -717,7 +717,7 @@ function REQUEST:lab_start_hourglass()
 end
 
 function REQUEST:lab_help_friend()
-    return labmgr:lab_help_friend(self.friendid)
+    return labmgr:lab_help_friend(self.friendid,self.glassid)
 end
 
 function REQUEST:lab_get_data()
@@ -740,8 +740,21 @@ function REQUEST:lab_set_keeper()
 	return labmgr:lab_set_keeper(self.keeperid)
 end
 
+function REQUEST:lab_quick_harvest()
+	return labmgr:lab_quick_harvest(self.glassid)
+end
 
+function REQUEST:set_unlock_soul()
+    player.config.unlock_soul = self.list
+    return { result = true}
+end
 
+function REQUEST:get_unlock_soul()
+	if player.config.unlock_soul == nil then
+		player.config.unlock_soul = {}
+	end
+	return { list = player.config.unlock_soul }
+end
 
 
 --落地数据到数据库

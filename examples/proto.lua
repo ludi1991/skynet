@@ -60,6 +60,12 @@ proto.c2s = sprotoparser.parse [[
     three_vs_three_items 9 : *item
 }
 
+#fight data
+.soul_fightdata {
+    soul 0 : soul
+    items 1 : *item(itemid)
+}
+
 .task {
     taskid 0: integer  #任务id   
     type 1 :integer    #任务类型
@@ -79,23 +85,18 @@ proto.c2s = sprotoparser.parse [[
     curtime 3 : integer
     status 4 : integer
     gold_loss 5 :integer
+    gold_can_get 6 : integer
+    acc 7 : integer
 }
 
 .labdata {
     keeper 0 : integer #守护id
-    acc 1 : integer #加速等级，1代表时间缩短1%
     
-    .friend {
-        playerid 0 : integer 
-        helped 1 : boolean
-    }
-
-    help_friend_list 2: *friend(playerid)
-
     .be_attacked {
         playerid 0 : integer
         nickname 1 : string
         lost 2 : integer
+        result 3 : boolean #true attack success false attack failed
     }
     
     be_attacked_list 3: *be_attacked(playerid) 
@@ -520,9 +521,11 @@ lab_start_hourglass 42 {
 lab_help_friend 43 {
     request {
         friendid 0 : integer
+        glassid 1 : integer
     }
     response {
-        result 0 : integer #1success 0failed
+        result 0 : integer #1success 0failed 
+        gold 1 : integer
     }
 }
 
@@ -531,23 +534,22 @@ lab_get_data 44 {
         playerid 0 : integer
     }
     response {
-        lab_data 0 : *labdata
+        lab_data 0 : labdata
+        fight_data 1 : soul_fightdata
     }
 }
 
 lab_match_player 45 {
     response {
-        playerid 0 : integer
-        nickname 1 : string
-        acc 2 : integer
-        hourglass 3 : *hourglass
-        soul 4 : soul 
+        ressult 0 : integer #1 have 0 no 
+        playerid 1 : integer
     }
 }
 
 lab_steal 46 {
     request {
         playerid 0 : integer
+        result 1 : integer #1success 0 failed
     }   
     response {
         result 0 : integer #1success 0 failed
@@ -571,6 +573,30 @@ lab_set_keeper 48 {
     }
     response {
         result 0: integer #1success 0 failed
+    }
+}
+
+lab_quick_harvest 49 {
+    request {
+        glassid 0 : integer
+    }
+    response {
+        result 0 : integer #1success 0failed
+    }
+}
+
+set_unlock_soul 51 {
+    request {
+        list 0 : *integer
+    }
+    response {
+        result 0 : integer
+    }    
+}
+
+get_unlock_soul 52 {
+    response {
+        list 0 : *integer
     }
 }
 
