@@ -745,11 +745,13 @@ function REQUEST:lab_quick_harvest()
 end
 
 function REQUEST:set_unlock_soul()
+	log("set ----")
     player.config.unlock_soul = self.list
-    return { result = true}
+    return { result = 1 }
 end
 
 function REQUEST:get_unlock_soul()
+	log ("get ----")
 	if player.config.unlock_soul == nil then
 		player.config.unlock_soul = {}
 	end

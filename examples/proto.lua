@@ -582,6 +582,7 @@ lab_quick_harvest 49 {
     }
     response {
         result 0 : integer #1success 0failed
+        gold 1 : integer
     }
 }
 

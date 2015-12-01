@@ -187,13 +187,17 @@ function command.HARVEST(playerid,glassid)
         hourglass.gold_loss = 0
         hourglass.curtime = -1
         hourglass.sandtype = -1
+        hourglass.acc = 0
+        hourglass.gold_can_get = 0
         return true
     else
     	return false
     end
 end
 
-function command.QUICKHARVEST(playerid,glassid)
+function command.QUICK_HARVEST(playerid,glassid)
+	--if lab_data[playerid].hourglass[glassid].status == GLASS_PRODUCING then
+
 
 end
 
