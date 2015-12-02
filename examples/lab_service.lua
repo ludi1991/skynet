@@ -70,8 +70,8 @@ function command.REGISTER(playerid)
 			keeper = 1 , 
 			atk_count = 0,
 	        be_attacked_list = {
-	            [1] = { playerid = 1, lost = 0, nickname = "abc",result = false},
-	            [2] = { playerid = 2, lost = 1500, nickname = "def",result = true}
+	            [1] = { playerid = 1, lost = 0, nickname = "abc",head_sculpture = 3,result = false ,attack_time = os.date("%Y-%m-%d %X")},
+	            [2] = { playerid = 2, lost = 1500, nickname = "def",head_sculpture = 1,result = false,attack_time = os.date("%Y-%m-%d %X")}
 	    	},
 			hourglass = {	
 				{ 
@@ -164,7 +164,18 @@ function command.STEAL(playerid,targetid,result)
 		        	-- nothing
 		        end
 		    end
-	   		lab_data[playerid].be_attacked_list[count+1] = { playerid = playerid , gold = gold_steal_total ,nickname = "gaga", result = true}
+            
+            local basic = skynet.call("DATA_CENTER","lua","get_player_data_part",playerid,"basic")
+
+	   		lab_data[playerid].be_attacked_list[count+1] = 
+	   		{   
+	   			playerid = playerid , 
+	   		    gold = gold_steal_total ,
+	   		    nickname = basic.nickname, 
+	   		    head_sculpture = basic.head_sculpture,
+	   		    result = true,
+	   		    attack_time = os.date("%Y-%m-%d %X")
+	   		}
 	   		lab_data[playerid].atk_count = lab_data[playerid].atk_count + 1
 	   		return true,gold_steal_total
 
@@ -189,15 +200,26 @@ function command.HARVEST(playerid,glassid)
         hourglass.sandtype = -1
         hourglass.acc = 0
         hourglass.gold_can_get = 0
-        return true
+        return true,gold
     else
     	return false
     end
 end
 
 function command.QUICK_HARVEST(playerid,glassid)
-	--if lab_data[playerid].hourglass[glassid].status == GLASS_PRODUCING then
-
+	if lab_data[playerid].hourglass[glassid].status == GLASS_PRODUCING then
+		local hourglass = lab_data[playerid].hourglass[glassid]
+		local gold = hourglass.gold_can_get - hourglass.gold_loss
+		hourglass.status = GLASS_EMPTY
+		hourglass.gold_loss = 0	
+		hourglass.curtime = -1
+		hourglass.sandtype = -1
+		hourglass.acc = 0 
+		hourglass.gold_can_get = 0
+		return true,gold
+	else 
+		return false
+    end
 
 end
 
@@ -210,13 +232,19 @@ function command.GET_DATA(playerid)
 	end
 end
 
-function command.GET_HOURGLASS_DATA(playerid)
-	return lab_data[playerid]
-end
 
 function command.SET_KEEPER(playerid,keeper)
     lab_data[playerid].keeper = keeper
     return true
+end
+
+function command.UNLOCK_HOURGLASS(playerid,glassid)
+	if lab_data[playerid] and lab_data[playerid].hourglass[glassid].status == GLASS_CLOSED then
+		lab_data[playerid].hourglass[glassid].status = GLASS_EMPTY
+		return true
+	else
+		return false
+	end
 end
 
 local function update()

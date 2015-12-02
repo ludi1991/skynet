@@ -26,6 +26,7 @@ proto.c2s = sprotoparser.parse [[
     create_time 6 : string        #创建时间
     cursoul 7 : integer #当前使用的魂
     cur_stayin_level 8 : integer #当前挂机关卡
+    head_sculpture 9 : integer
 }
 
 .rankdata {       #排名信息
@@ -78,6 +79,7 @@ proto.c2s = sprotoparser.parse [[
     percent 8: integer    #完成百分比
 }
 
+
 .hourglass {
     playerid 0 : integer
     glassid 1 : integer
@@ -95,12 +97,14 @@ proto.c2s = sprotoparser.parse [[
     .be_attacked {
         playerid 0 : integer
         nickname 1 : string
-        lost 2 : integer
-        result 3 : boolean #true attack success false attack failed
+        head_sculpture 2 : integer
+        lost 3 : integer
+        result 4 : boolean #true attack success false attack failed
+        attack_time 5 : string
     }
     
-    be_attacked_list 3: *be_attacked(playerid) 
-    hourglass 4 : *hourglass(glassid)
+    be_attacked_list 1: *be_attacked(playerid) 
+    hourglass 2 : *hourglass(glassid)
     
 }
 
@@ -586,6 +590,15 @@ lab_quick_harvest 49 {
     }
 }
 
+lab_unlock_glasshour 50 {
+    request {
+        glassid 0 : integer
+    }
+    response {
+        result 0 : integer #1success 0 failed
+    }
+}
+
 set_unlock_soul 51 {
     request {
         list 0 : *integer
@@ -598,6 +611,30 @@ set_unlock_soul 51 {
 get_unlock_soul 52 {
     response {
         list 0 : *integer
+    }
+}
+
+get_friend_list 53 {
+    response {
+        list 0 : *player_basic(playerid)
+    }
+}
+
+add_friend 54 {
+    request {
+        playerid 0 : integer
+    }
+    response {
+        result 1 : integer
+    }
+}
+
+delete_friend 55 {
+    request {
+        playerid 0 : integer
+    }
+    response {
+        result 0 : integer
     }
 }
 

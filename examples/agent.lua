@@ -8,6 +8,7 @@ local taskmgr = require "gamelogic.taskmgr"
 local statmgr = require "gamelogic.statmgr"
 local itemmgr = require "gamelogic.itemmgr"
 local labmgr = require "gamelogic.labmgr"
+local friendmgr = require "gamelogic.friendmgr"
 local fp_cal = require "gamelogic.fp_calculator"
 
 local WATCHDOG
@@ -35,7 +36,7 @@ local redis_name_tbl = {
 }
 
 
-local function send_package(pack)  
+local function send_package(pack)
 	local package = string.pack(">s2", pack)
 	socket.write(client_fd, package)
 end
@@ -50,7 +51,7 @@ local function have_enough_diamond(value)
 end
 
 local function have_enough_stone(value)
-	return player.items ~= nil and 
+	return player.items ~= nil and
 	       player.items[1000001] ~= nil and
 	       player.items[1000001].itemcount - value >= 0
 end
@@ -60,16 +61,16 @@ local function have_item(itemid)
 end
 
 -- 增加或减少金币
-local function add_gold(value)	
+local function add_gold(value)
 	if player.basic.gold + value < 0 then
 	    print ("not enough gold")
 	    return false
-	else 
+	else
         player.basic.gold = player.basic.gold + value
-        if value < 0 then           	
-        	statmgr:add_gold_consumed(-value)         	
+        if value < 0 then
+        	statmgr:add_gold_consumed(-value)
         	taskmgr:update_tasks_by_condition_type(5)
-  	
+
         end
 	    return true
     end
@@ -84,7 +85,7 @@ local function add_diamond(value)
 		if player.basic.diamond + value < 0 then
 		    print ("not enough gold")
 		    return false
-		else 
+		else
             player.basic.diamond = player.basic.diamond + value
             if value < 0 then
             	statmgr:add_diamond_consumed(-value)
@@ -134,7 +135,7 @@ local function sync_fight_data_to_redis()
 	skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_name_tbl[2],team_fp,""..player.basic.playerid)
 
 
-	local one_vs_one_id = player.config.soulid_1v1 
+	local one_vs_one_id = player.config.soulid_1v1
 	local three_vs_three_ids = player.config.soulid_3v3
 
 	ofp = fp_cal:get_1v1_fightpower(player)
@@ -148,26 +149,26 @@ local function sync_fight_data_to_redis()
         level = player.basic.level,
         one_vs_one_fp = ofp,
         three_vs_three_fp = tfp,
-        one_vs_one_soul = 
-        { 
-            soulid = 0 , 
-            itemids = { 1,-1,-1,-1,-1,-1,-1,-1 } , 
+        one_vs_one_soul =
+        {
+            soulid = 0 ,
+            itemids = { 1,-1,-1,-1,-1,-1,-1,-1 } ,
             soul_girl_id = 1,
         } ,
-        one_vs_one_items = 
-        {  
-            { itemid = 1, itemtype = 1101010 , itemextra = 0 , itemcount = 1} , 
-            { itemid = 2 , itemtype = 1101010 , itemextra = 0 ,itemcount = 1} , 
+        one_vs_one_items =
+        {
+            { itemid = 1, itemtype = 1101010 , itemextra = 0 , itemcount = 1} ,
+            { itemid = 2 , itemtype = 1101010 , itemextra = 0 ,itemcount = 1} ,
         } ,
 
-        three_vs_three_souls = 
-        { 
+        three_vs_three_souls =
+        {
             { soulid = 0 , itemids = { 1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1},
             { soulid = 1 , itemids = { -1,2,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 2},
             { soulid = 2 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 3},
         },
 
-        three_vs_three_items = 
+        three_vs_three_items =
         {
             { itemid = 1 , itemtype = 1010101 , itemextra = 0 , itemcount = 1},
             { itemid = 2 , itemtype = 1010101 , itemextra = 0 , itemcount = 1},
@@ -190,9 +191,9 @@ local function sync_fight_data_to_redis()
 		tbl.three_vs_three_souls = {
             player.souls[three_vs_three_ids[1]],
             player.souls[three_vs_three_ids[2]],
-            player.souls[three_vs_three_ids[3]], 
+            player.souls[three_vs_three_ids[3]],
 	    }
-        
+
         local items = {}
 	    for i=1,3 do
 	    	if tbl.three_vs_three_souls[i] ~= nil then
@@ -210,7 +211,7 @@ local function sync_fight_data_to_redis()
 	end
 
 	local res = skynet.call("REDIS_SERVICE","lua","proc","set",""..player.basic.playerid.."_data",dump(tbl))
-    
+
 end
 
 local function get_player_fightpower(ranktype)
@@ -240,7 +241,7 @@ local function get_rank(ranktype,playerid)
 	    res = skynet.call("REDIS_SERVICE","lua","proc","zscore",redis_name_tbl[ranktype],playerid)
 		if res then
 			log(res)
-	    	res = tonumber(res) 
+	    	res = tonumber(res)
 	    else
 	    	res = 10000
 	    end
@@ -325,12 +326,13 @@ function REQUEST:login()
 
     log ("player "..self.playerid.." is initalized!","info")
     log(dump(player))
-    
+
     taskmgr:set_player(player)
     statmgr:set_player(player)
     itemmgr:set_player(player)
     labmgr:set_player(player)
-  
+    friendmgr:set_player(player)
+
 
     skynet.fork(function()
 		while true do
@@ -375,11 +377,11 @@ function REQUEST:get_rank_data()
         local _,fight_data = pcall(load("return "..fight_data_str))
         if self.ranktype == 1 or self.ranktype == 2 then
 		    table.insert(result,
-	    	{ 
-	    		playerid = tonumber(theplayerid) , 
-	    	    name = fight_data.nickname , 
-	    	  	score = thescore , 
-	    	  	rank = math.ceil((i-1)/2)+self.start 
+	    	{
+	    		playerid = tonumber(theplayerid) ,
+	    	    name = fight_data.nickname ,
+	    	  	score = thescore ,
+	    	  	rank = math.ceil((i-1)/2)+self.start
 	    	})
         elseif self.ranktype == 3 or self.ranktype == 4 then
 
@@ -389,7 +391,7 @@ function REQUEST:get_rank_data()
                 playerid = tonumber(theplayerid),
                 name = fight_data.nickname,
                 score = self.ranktype == 3 and fight_data.one_vs_one_fp or fight_data.three_vs_three_fp ,
-                rank = math.ceil((i-1)/2)+self.start 
+                rank = math.ceil((i-1)/2)+self.start
     		})
         end
 
@@ -405,7 +407,7 @@ end
 
 function REQUEST:set_cursoul()
 	player.basic.cursoul = self.soulid
-	return { result = 1 } 
+	return { result = 1 }
 end
 
 function REQUEST:get_server_time()
@@ -415,7 +417,7 @@ end
 function REQUEST:pass_boss_level()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
-    
+
     if self.items ~= nil then
 		for _,v in pairs(self.items) do
 			player.items[v.itemid] = v
@@ -425,10 +427,10 @@ function REQUEST:pass_boss_level()
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
     end
-    
+
     taskmgr:update_tasks_by_condition_type(1)
     taskmgr:trigger_task(1)
-   
+
 
 	return { result = 1 }
 end
@@ -437,7 +439,7 @@ end
 function REQUEST:pass_level()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
-    
+
     if self.items ~= nil then
 		for _,v in pairs(self.items) do
 			player.items[v.itemid] = v
@@ -477,8 +479,8 @@ function REQUEST:get_task_reward()
     	if diamond ~= nil then
     		add_diamond(diamond)
     	end
-        
-        local items = nil    
+
+        local items = nil
     	if item ~= nil then
     		local item = itemmgr:add_item(item.itemtype,item.itemcount)
     		items = { item }
@@ -500,10 +502,10 @@ function REQUEST:set_cur_stayin_level()
 end
 
 function REQUEST:strengthen_item()
-    if have_enough_gold(self.gold) and have_enough_stone(self.stone) and 
+    if have_enough_gold(self.gold) and have_enough_stone(self.stone) and
         have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
         print ("strengthen_item"..dump(self.item))
- 
+
         add_gold(-self.gold)
         add_diamond(-self.diamond)
         itemmgr:add_stone(-self.stone)
@@ -515,11 +517,11 @@ function REQUEST:strengthen_item()
 
     return { result = 0 }
 
-  
+
 end
 
 function REQUEST:upgrade_item()
-	if have_enough_gold(self.gold) and have_enough_diamond(self.diamond) 
+	if have_enough_gold(self.gold) and have_enough_diamond(self.diamond)
 	   and have_item(self.item.itemid) then
 
 	   add_gold(-self.gold)
@@ -537,17 +539,17 @@ function REQUEST:melt_item()
 	for _,id in pairs(self.itemids) do
 		if have_item(id) == false then return { result = 0 } end
 	end
-    
+
     for _,id in pairs(self.itemids) do
     	itemmgr:delete_item(id)
     end
-    
+
     add_item(self.newitem)
     itemmgr:add_stone(self.stone)
 
     statmgr:add_melt_times(1)
     taskmgr:update_tasks_by_condition_type(11)
-    
+
     return { result = 1 }
 
 end
@@ -556,14 +558,14 @@ function REQUEST:sell_item()
 	for _,id in pairs(self.itemids) do
 		if have_item(id) == false then return { result = 0 } end
 	end
-    
+
     for _,id in pairs(self.itemids) do
     	itemmgr:delete_item(id)
     end
 
     add_gold(self.gold[1])
     return { result = 1 }
-    
+
 end
 
 
@@ -599,7 +601,7 @@ end
 function REQUEST:add_offline_reward()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
-    
+
     if self.items ~= nil then
 		for _,v in pairs(self.items) do
 			player.items[v.itemid] = v
@@ -612,23 +614,23 @@ end
 
 function REQUEST:get_fight_data()
 
-    
+
     local fight_data_str = skynet.call("REDIS_SERVICE","lua","proc","get",player.basic.playerid.."_data")
     local _,player_data = pcall(load("return "..fight_data_str))
 
-  
-    local ids 
+
+    local ids
     local playerrank
     local enemyrank = {}
     if self.fight_type == 1 then
-    	ids = { 1000003 , 1000001 , 1000002} 
+    	ids = { 1000003 , 1000001 , 1000002}
     	playerrank = get_rank(3,player.basic.playerid)
     	for i,v in pairs(ids) do
     		table.insert(enemyrank,get_rank(3,v))
     	end
     elseif self.fight_type == 2 then
     	ids = { 1000004 , 1000001 , 1000002}
-    	playerrank = get_rank(4,player.basic.playerid) 
+    	playerrank = get_rank(4,player.basic.playerid)
     	for i,v in pairs(ids) do
     		table.insert(enemyrank,get_rank(4,v))
     	end
@@ -641,7 +643,7 @@ function REQUEST:get_fight_data()
     	table.insert(enemy_data,fight_data)
     end
 
-    return  {  player_data = player_data , enemy_data = enemy_data ,player_rank = playerrank ,enemy_rank = enemyrank} 
+    return  {  player_data = player_data , enemy_data = enemy_data ,player_rank = playerrank ,enemy_rank = enemyrank}
 end
 
 function REQUEST:set_fight_soul()
@@ -744,6 +746,10 @@ function REQUEST:lab_quick_harvest()
 	return labmgr:lab_quick_harvest(self.glassid)
 end
 
+function REQUEST:lab_unlock_hourglass()
+	return labmgr:lab_unlock_hourglass(self.glassid)
+end
+
 function REQUEST:set_unlock_soul()
 	log("set ----")
     player.config.unlock_soul = self.list
@@ -758,6 +764,18 @@ function REQUEST:get_unlock_soul()
 	return { list = player.config.unlock_soul }
 end
 
+function REQUEST:get_friend_list()
+    return friendmgr:get_friend_list()
+end
+
+function REQUEST:add_friend()
+    return friendmgr:add_friend(self.playerid)
+end
+
+function REQUEST:delete_friend()
+    return friendmgr:delete_friend(self.playerid)
+end
+
 
 --落地数据到数据库
 local function save_to_db()
@@ -768,7 +786,7 @@ function REQUEST:create_new_player()
     player = {}
     local sqlstr = "SELECT playerid FROM L2.player_basic order by playerid desc limit 1"
 	local newplayerid = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)[1].playerid + 1
-	
+
     player.basic = {
         playerid = newplayerid,
         nickname = self.nickname..math.random(100000),
@@ -783,15 +801,17 @@ function REQUEST:create_new_player()
 
     player.items = { }
     player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
-    player.tasks = { } 
-    player.config = 
-    {   
-        soulid_1v1 = 1 , 
+    player.tasks = { }
+    player.config =
+    {
+        soulid_1v1 = 1 ,
         soulid_3v3 = { 1,2,3 } ,
         finished_tasks = {} ,
     }
     player.lab = { keeper = 1 , hourglass = {} , keys = 5 , help_list = {} , be_helped_list = {} }
-    
+    player.friend = {
+        13,14,15,16,17,22,30
+    }
 
     -- 战5渣 at first
     for i=1,4 do create_rank_for_player(i) end
@@ -801,6 +821,7 @@ function REQUEST:create_new_player()
     statmgr:set_player(player)
     itemmgr:set_player(player)
     labmgr:set_player(player)
+    friendmgr:set_player(player)
     taskmgr:trigger_task(0)
 
     save_to_db()
@@ -808,7 +829,7 @@ function REQUEST:create_new_player()
 
     return { result = 1 , playerid = newplayerid }
 
-   
+
 end
 
 
@@ -835,7 +856,7 @@ local function dispatch_with_queue(_,_,type,...)
 	else
 		assert(type == "RESPONSE")
 		error "This example doesn't support request client"
-	end	
+	end
 end
 
 local function dispatch(_,_,type,...)
@@ -851,7 +872,7 @@ local function dispatch(_,_,type,...)
 	else
 		assert(type == "RESPONSE")
 		error "This example doesn't support request client"
-	end	
+	end
 end
 
 
@@ -917,7 +938,7 @@ skynet.start(function()
 	skynet.dispatch("lua", function(_,_, command, ...)
 		print ("dispatch something "..command)
 		local f = CMD[command]
-		if f then 
+		if f then
 		    skynet.ret(skynet.pack(f(...)))
 		else
 		end
