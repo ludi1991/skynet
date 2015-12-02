@@ -784,7 +784,7 @@ end
 
 function REQUEST:create_new_player()
     player = {}
-    local sqlstr = "SELECT playerid FROM L2.player_basic order by playerid desc limit 1"
+    local sqlstr = "SELECT playerid FROM L2.player_savedata order by playerid desc limit 1"
 	local newplayerid = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)[1].playerid + 1
 
     player.basic = {

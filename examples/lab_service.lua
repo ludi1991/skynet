@@ -248,15 +248,23 @@ function command.UNLOCK_HOURGLASS(playerid,glassid)
 end
 
 local function update()
-	log ("updating")
-    for i,v in pairs(working_glasses) do
-    	v.curtime = v.curtime + 1
-    	if v.curtime >= math.floor(TIME_TBL[v.sandtype] * lab_data[v.playerid].acc * 0.01) then
-    		v.status = GLASS_FULL
-    		v.curtime = 0
-    		working_glasses[v] = nil
-    	end
-    end
+	while true do
+		local count = 0
+	    for i,v in pairs(working_glasses) do
+	    	v.curtime = v.curtime + 1
+	    	if v.curtime >= math.floor(TIME_TBL[v.sandtype] * lab_data[v.playerid].acc * 0.01) then
+	    		v.status = GLASS_FULL
+	    		v.curtime = 0
+	    		working_glasses[i] = nil
+	    		log("remove glass")
+	    	end
+	    	count = count + 1
+	    end
+        
+        log(""..count.." glasses is working ")
+
+	    skynet.sleep(100)
+	end
 end
 
 skynet.start(function()
@@ -268,6 +276,6 @@ skynet.start(function()
 			error(string.format("Unknown command %s", tostring(cmd)))
 		end
 	end)
-	--skynet.fork(100,update)
+	skynet.fork(update)
 	skynet.register "LAB_SERVICE"
 end)
