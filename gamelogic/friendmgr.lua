@@ -1,0 +1,24 @@
+local friendmgr = {}
+
+
+function friendmgr:set_player(player)
+	self.player = player
+end
+
+function friendmgr:get_friend_list()
+    local tbl = {}
+    for i,v in pairs(self.player.friends) do
+        local data = skynet.call("DATA_CENTER","lua","get_player_data_part",self.player.basic.playerid,"basic")
+        table.insert(tbl,data)
+    end
+    return tbl
+end
+
+function friendmgr:add_friend(playerid)
+end
+
+function friendmgr:delete_friend(playerid)
+end
+
+
+return friendmgr
