@@ -101,6 +101,7 @@ proto.c2s = sprotoparser.parse [[
         lost 3 : integer
         result 4 : boolean #true attack success false attack failed
         attack_time 5 : string
+        level 6 : integer
     }
     
     be_attacked_list 1: *be_attacked(playerid) 
@@ -545,8 +546,11 @@ lab_get_data 44 {
 
 lab_match_player 45 {
     response {
-        ressult 0 : integer #1 have 0 no 
+        result 0 : integer #1 have 0 no 
         playerid 1 : integer
+        nickname 2 : string
+        head_sculpture 3 : integer
+        level 4 : integer
     }
 }
 
@@ -590,7 +594,7 @@ lab_quick_harvest 49 {
     }
 }
 
-lab_unlock_glasshour 50 {
+lab_unlock_hourglass 50 {
     request {
         glassid 0 : integer
     }
@@ -635,6 +639,21 @@ delete_friend 55 {
     }
     response {
         result 0 : integer
+    }
+}
+
+set_guide_step 56 {
+    request {
+        step 0 : integer
+    }
+    response {
+        result 1 : integer
+    }
+}
+
+get_guide_step 57 {
+    response {
+        step 0 : integer
     }
 }
 
@@ -683,6 +702,8 @@ update_task 3 {
         task 0: task
     }   
 }
+
+lab_friend_helped 4 {}
 
 
 ]]

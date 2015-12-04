@@ -17,6 +17,7 @@ skynet.start(function()
 	skynet.newservice("player_data_center")
 	skynet.newservice("online_center")
 	skynet.newservice("lab_service")
+	skynet.newservice("rank_service")
 
 
 	local watchdog = skynet.newservice("watchdog")

@@ -15,9 +15,7 @@ local request = host:attach(sproto.new(proto.c2s))
 local fd = assert(socket.connect("127.0.0.1", 8888))
 
 local function send_package(fd, pack)
-        print ("ludi pack is "..pack)
 	local package = string.pack(">s2", pack)
-        print ("ludi package is "..package)
 	socket.send(fd, package)
 end
 
@@ -113,14 +111,13 @@ function string.split(str, delimiter)
 end
 
 
-
-send_request("handshake")
-send_request("set", { what = "hello", value = "world" })
 while true do
 	dispatch_package()
 	local cmd = socket.readstdin()
 	if cmd then
 		local split = string.split(cmd," ")
+            for i=1,#split do
+
 
 		if cmd == "quit" then
 			send_request("quit")

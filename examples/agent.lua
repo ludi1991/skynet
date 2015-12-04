@@ -325,7 +325,7 @@ function REQUEST:login()
 	set_sync_redis_flag()
 
     log ("player "..self.playerid.." is initalized!","info")
-    log(dump(player))
+   -- log(dump(player))
 
     taskmgr:set_player(player)
     statmgr:set_player(player)
@@ -751,13 +751,11 @@ function REQUEST:lab_unlock_hourglass()
 end
 
 function REQUEST:set_unlock_soul()
-	log("set ----")
     player.config.unlock_soul = self.list
     return { result = 1 }
 end
 
 function REQUEST:get_unlock_soul()
-	log ("get ----")
 	if player.config.unlock_soul == nil then
 		player.config.unlock_soul = {}
 	end
@@ -777,41 +775,24 @@ function REQUEST:delete_friend()
 end
 
 
+function REQUEST:set_guide_step()
+    player.config.guide_step = self.guide_step
+end
+
+function REQUEST:get_guide_step()
+	return player.config.guide_step
+end
+
+
+
 --落地数据到数据库
 local function save_to_db()
 	local res = skynet.call("DATA_CENTER","lua","save_player_data",player)
 end
 
 function REQUEST:create_new_player()
-    player = {}
-    local sqlstr = "SELECT playerid FROM L2.player_savedata order by playerid desc limit 1"
-	local newplayerid = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)[1].playerid + 1
-
-    player.basic = {
-        playerid = newplayerid,
-        nickname = self.nickname..math.random(100000),
-        diamond = 0,
-        gold = 0,
-        create_time = os.date("%Y-%m-%d %X"),
-        level = 1,
-        last_login_time = os.date("%Y-%m-%d %X"),
-        cursoul = 1,
-        cur_stayin_level = 1,
-    }
-
-    player.items = { }
-    player.souls = { { soulid = 1 , itemids = { -1,-1,-1,-1,-1,-1,-1,-1 } , soul_girl_id = 1} }
-    player.tasks = { }
-    player.config =
-    {
-        soulid_1v1 = 1 ,
-        soulid_3v3 = { 1,2,3 } ,
-        finished_tasks = {} ,
-    }
-    player.lab = { keeper = 1 , hourglass = {} , keys = 5 , help_list = {} , be_helped_list = {} }
-    player.friend = {
-        13,14,15,16,17,22,30
-    }
+    local newplayerid
+    newplayerid,player = skynet.call("DATA_CENTER","lua","create_player",self.nickname)
 
     -- 战5渣 at first
     for i=1,4 do create_rank_for_player(i) end
@@ -822,9 +803,12 @@ function REQUEST:create_new_player()
     itemmgr:set_player(player)
     labmgr:set_player(player)
     friendmgr:set_player(player)
+
     taskmgr:trigger_task(0)
+    labmgr:lab_register()
 
     save_to_db()
+    
 
 
     return { result = 1 , playerid = newplayerid }
@@ -890,6 +874,9 @@ function CMD.chat(themsg)
 	send_package(send_request("chatting",{name = themsg.name ,msg = themsg.msg,time = os.date()}))
 end
 
+function CMD.lab_friend_helped()
+    send_package(send_request("lab_friend_helped"))
+end
 
 
 function CMD.start(conf)

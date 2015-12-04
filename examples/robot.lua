@@ -51,11 +51,6 @@ function command.ADDROBOT(count)
         skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_1v1_name,i,""..tbl.playerid)
         skynet.call("REDIS_SERVICE","lua","proc","zadd",redis_3v3_name,i,""..tbl.playerid)
 
-        -- db:set(""..(1000000+i).."_data",dump(tbl))
-        -- db:zadd(redis_single_fp_name,i,""..tbl.playerid)
-        -- db:zadd(redis_team_fp_name,i,""..tbl.playerid)     
-        -- db:zadd(redis_1v1_name,i,""..tbl.playerid)
-        -- db:zadd(redis_3v3_name,i,""..tbl.playerid)
     end
     log ("init robot!")
 end

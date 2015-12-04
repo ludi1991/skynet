@@ -25,8 +25,6 @@ local function send_package(fd, pack)
     end
     local package2 = mypack(pack)
     
-    print ("aaaa"..package2:byte(1).." "..package2:byte(2))
-    print ("bbbb"..package:byte(1).." "..package:byte(2))
 	socket.send(fd, package2)
 end
 
@@ -140,8 +138,6 @@ end
 
 
 
-send_request("handshake")
-send_request("set", { what = "hello", value = "world" })
 while true do
 	dispatch_package()
 	local cmd = socket.readstdin()
