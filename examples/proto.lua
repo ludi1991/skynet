@@ -1,7 +1,6 @@
 local sprotoparser = require "sprotoparser"
 
 local proto = {}
-
 proto.c2s = sprotoparser.parse [[
 .package {
     type 0 : integer

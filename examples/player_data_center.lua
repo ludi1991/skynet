@@ -23,6 +23,9 @@ local function get_player_data(playerid)
 	end
 end
 
+function command.CREATE_ROBOT(nickname)
+	
+end
 
 function command.CREATE_PLAYER(nickname)
 	local player = {}
