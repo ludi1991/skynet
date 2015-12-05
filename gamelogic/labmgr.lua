@@ -41,18 +41,18 @@ function labmgr:lab_start_hourglass(hourglassid,sandtype)
 	end
 end
 
-function labmgr:lab_help_friend(friendid)
+function labmgr:lab_help_friend(friend_id,glass_id,unique_id)
     if not itemmgr:have_item(BATTERY_ID) then
         log("don't have battery")	
-        return { res = 0}
+        return { result = 0}
     else
     	itemmgr:delete_item(BATTER_ID)
-		local res,gold = skynet.call("LAB_SERVICE","lua","help_friend",self.player.basic.playerid,friendid)
+		local res,gold = skynet.call("LAB_SERVICE","lua","help_friend",self.player.basic.playerid,friend_id,glass_id,unique_id)
 	    if res == true then
 	    	self.player.basic.gold = self.player.basic.gold + gold
-	    	return { res = 1 ,gold = gold}
+	    	return { result = 1 ,gold = gold}
 	    else
-	    	return { res = 0 ,gold = 0}
+	    	return { result = 0 ,gold = 0}
 	    end
 	end
 end
@@ -68,7 +68,6 @@ function labmgr:lab_get_data(playerid)
 end
 
 function labmgr:lab_match_player()
-	
 	return skynet.call("LAB_SERVICE","lua","match_player")
 end
 
@@ -93,7 +92,7 @@ function labmgr:lab_harvest(glassid)
 end
 
 function labmgr:lab_set_keeper(keeperid)
-    local res = skynet.call("LAB_SERVICE","lua","set_keeper",keeperid)	
+    local res = skynet.call("LAB_SERVICE","lua","set_keeper",self.player.basic.playerid,keeperid)	
     if res == true then
     	return { result = 1}
     else
@@ -113,6 +112,15 @@ end
 
 function labmgr:lab_unlock_hourglass(glassid)
 	local res = skynet.call("LAB_SERVICE","lua","unlock_hourglass",self.player.basic.playerid,glassid)
+	if res == true then
+		return { result = 1}
+	else
+		return { result = 0}
+	end
+end
+
+function labmgr:lab_start_steal(targetid)
+	local res = skynet.call("LAB_SERVICE","lua","start_steal",targetid)
 	if res == true then
 		return { result = 1}
 	else

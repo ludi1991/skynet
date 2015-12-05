@@ -719,7 +719,7 @@ function REQUEST:lab_start_hourglass()
 end
 
 function REQUEST:lab_help_friend()
-    return labmgr:lab_help_friend(self.friendid,self.glassid)
+    return labmgr:lab_help_friend(self.friendid,self.glassid,self.unique_id)
 end
 
 function REQUEST:lab_get_data()
@@ -776,13 +776,18 @@ end
 
 
 function REQUEST:set_guide_step()
-    player.config.guide_step = self.guide_step
+	log ("set guide step "..self.step)
+    player.config.guide_step = self.step
+    return { result = 1 }
 end
 
 function REQUEST:get_guide_step()
-	return player.config.guide_step
+	return { step = player.config.guide_step }
 end
 
+function REQUEST:lab_start_steal()
+    return labmgr:lab_start_steal(self.playerid)
+end
 
 
 --落地数据到数据库
@@ -809,7 +814,6 @@ function REQUEST:create_new_player()
 
     save_to_db()
     
-
 
     return { result = 1 , playerid = newplayerid }
 
@@ -878,6 +882,13 @@ function CMD.lab_friend_helped()
     send_package(send_request("lab_friend_helped"))
 end
 
+function CMD.lab_stolen()
+	send_package(send_request("lab_stolen"))
+end
+
+function CMD.get_data()
+	return player
+end
 
 function CMD.start(conf)
 	local fd = conf.client

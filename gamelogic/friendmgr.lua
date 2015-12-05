@@ -1,3 +1,4 @@
+local skynet = require "skynet"
 local friendmgr = {}
 
 
@@ -7,11 +8,16 @@ end
 
 function friendmgr:get_friend_list()
     local tbl = {}
-    for i,v in pairs(self.player.friends) do
-        local data = skynet.call("DATA_CENTER","lua","get_player_data_part",self.player.basic.playerid,"basic")
+    for i,v in pairs(self.player.friend) do
+        local data = skynet.call("DATA_CENTER","lua","get_player_data_part",v,"basic")
         table.insert(tbl,data)
+
+   --     tbl[data.playerid] = data
+      --  data.playerid = 1
     end
-    return tbl
+    log ("get friend")
+    log (dump(tbl))
+    return { list = tbl }
 end
 
 function friendmgr:add_friend(playerid)

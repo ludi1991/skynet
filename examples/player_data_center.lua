@@ -8,6 +8,14 @@ local command = {}
 
 local function get_player_data(playerid)
    -- log("player_data!!!"..dump(player_data))
+    local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",playerid)
+    if res then
+    	local res,data = pcall(skynet.call, agent, "lua", "get_data")
+    	if res then
+    	    player_data[playerid] = data
+    	end
+    end
+
 	if not player_data[playerid] then
 		local sqlstr = "SELECT data FROM L2.player_savedata where playerid = "..playerid;
 	    local res = skynet.call("MYSQL_SERVICE","lua","query",sqlstr)
@@ -24,7 +32,7 @@ local function get_player_data(playerid)
 end
 
 function command.CREATE_ROBOT(nickname)
-	
+
 end
 
 function command.CREATE_PLAYER(nickname)
@@ -42,6 +50,7 @@ function command.CREATE_PLAYER(nickname)
         last_login_time = os.date("%Y-%m-%d %X"),
         cursoul = 1,
         cur_stayin_level = 1,
+        head_sculpture = 1,
     }
 
     player.items = { }
@@ -55,7 +64,7 @@ function command.CREATE_PLAYER(nickname)
         guide_step = 0,
     }
     player.friend = {
-        14,18,15,16,17,22,30
+        905,904,903
     }
 	return newplayerid,player
 end
@@ -75,7 +84,8 @@ end
 function command.GET_PLAYER_FIGHT_DATA(playerid,soulid)
 	local data = get_player_data(playerid)
 	local items = {}
-	log("soulid"..soulid)
+	log("playerid"..playerid.."soulid"..soulid)
+	log(dump(data.souls))
 	for i,v in pairs(data.souls[soulid].itemids) do
 		if v ~= -1 then
 			items[v] = data.items[v]
@@ -101,6 +111,7 @@ function command.SAVE_PLAYER_DATA(player)
     end
 	return true
 end
+
 
 
 

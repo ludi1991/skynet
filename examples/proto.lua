@@ -88,6 +88,7 @@ proto.c2s = sprotoparser.parse [[
     gold_loss 5 :integer
     gold_can_get 6 : integer
     acc 7 : integer
+    unique_id 8 : string  
 }
 
 .labdata {
@@ -105,6 +106,7 @@ proto.c2s = sprotoparser.parse [[
     
     be_attacked_list 1: *be_attacked(playerid) 
     hourglass 2 : *hourglass(glassid)
+    safe_time 3 : integer #-1 unsafe 
     
 }
 
@@ -526,6 +528,7 @@ lab_help_friend 43 {
     request {
         friendid 0 : integer
         glassid 1 : integer
+        unique_id 2 : string
     }
     response {
         result 0 : integer #1success 0failed 
@@ -656,6 +659,14 @@ get_guide_step 57 {
     }
 }
 
+lab_start_steal 58 {
+    request {
+        playerid 0 : integer
+    }
+    response {
+        result 0 : integer #success 1 failed
+    }
+}
 
 ]]
 
@@ -704,6 +715,7 @@ update_task 3 {
 
 lab_friend_helped 4 {}
 
+lab_stolen 5 {}
 
 ]]
 

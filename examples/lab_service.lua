@@ -6,9 +6,16 @@ local lab_data = {}
 
 local working_glasses = {}
 
+
+-- player under protection
+local safe_tbl = {}
+
 local command = {}
 
+
 local MAX_ACC = 30
+
+local ROBOT_IDS = { 905,904,903 }
 
 -- 4 status of sandglass
 local GLASS_CLOSED = -1
@@ -16,14 +23,16 @@ local GLASS_EMPTY = 0
 local GLASS_PRODUCING = 1
 local GLASS_FULL = 2
 
-local HELP_ACC = 3
+local HELP_ACC = 10
 local HELP_GOLD_PERCENT = 0.03
 local STEAL_GOLD_PERCENT = 0.1
 
+local SAFE_TIME_GIVEN = 600
+
 local TIME_TBL = {
-	5,
-	5*2,
-	5*3,
+	60*60,
+	60*60*2,
+	60*60*3,
 }
 
 local GOLD_LOWER_TBL = {
@@ -39,10 +48,6 @@ local GOLD_UPPER_TBL = {
 	150000,
 }
 
-
-local lock_table = {
-	
-}
 
 local function add_to_working_table(hg)
 	if not working_glasses[hg.playerid] then
@@ -62,16 +67,30 @@ local function remove_from_working_table(hg)
 	end
 end
 
-local function lock_player(playerid)
-	lab_data[playerid].lock = true
+local function protect_player(playerid)
+	safe_tbl[playerid] = true
+	lab_data[playerid].safe_time = SAFE_TIME_GIVEN
 end
 
-local function unlock_player(playerid)
-	lab_data[playerid].lock = false
+local function stop_protect_player(playerid)
+	safe_tbl[playerid] = nil
+	lab_data[playerid].safe_time = -1
 end
 
-local function is_locked(playerid)
-	return lab_data[playerid].lock
+local function is_safe(playerid)
+	return safe_tbl[playerid] ~= nil
+end
+
+local function update_safe_tbl()
+	while true do
+		for playerid,_ in pairs(safe_tbl) do
+			lab_data[playerid].safe_time = lab_data[playerid].safe_time - 1
+			if lab_data[playerid].safe_time <= 0 then
+				stop_protect_player()
+			end
+		end
+		skynet.sleep(100)
+	end
 end
 
 local function cal_steal_gold(hourglass)
@@ -91,9 +110,10 @@ function command.REGISTER(playerid)
 		{ 
 			keeper = 1 , 
 			atk_count = 0,
+			safe_time = -1,
 	        be_attacked_list = {
-	            [1] = { playerid = 170, lost = 0, nickname = "abc",head_sculpture = 3,result = false ,attack_time = os.date("%Y-%m-%d %X"),level = 3},
-	            [2] = { playerid = 180, lost = 1500, nickname = "def",head_sculpture = 1,result = false,attack_time = os.date("%Y-%m-%d %X"),level = 4}
+	            [1] = { playerid = 905, lost = 0, nickname = "abc",head_sculpture = 3,result = false ,attack_time = os.date("%Y-%m-%d %X"),level = 3},
+	            [2] = { playerid = 904, lost = 1500, nickname = "def",head_sculpture = 1,result = false,attack_time = os.date("%Y-%m-%d %X"),level = 4}
 	    	},
 			hourglass = {	
 				{ 
@@ -105,6 +125,7 @@ function command.REGISTER(playerid)
 				    gold_loss = -1,
 				    gold_can_get = -1,
 				    acc = 0,
+				    unique_id = "",
 			    } ,
 			    {
 				    playerid = playerid ,
@@ -114,7 +135,8 @@ function command.REGISTER(playerid)
 				    status = GLASS_CLOSED,
 				    gold_loss = 0,
 				    gold_can_get = -1,
-				    acc = 0
+				    acc = 0,
+				    unique_id = ""
 			    } ,  
 			    {
 				    playerid = playerid ,
@@ -125,6 +147,7 @@ function command.REGISTER(playerid)
 				    gold_loss = 0,
 				    gold_can_get = -1,
 				    acc = 0,
+				    unique_id = "",
 			    } ,   
 			}, 
 	    }
@@ -142,7 +165,7 @@ function command.START_HOURGLASS(playerid,glassid,sandtype)
 	    log("no playerid")
 	    return false
 	end
-	log (dump(lab_data[playerid].hourglass[glassid]))
+	--log (dump(lab_data[playerid].hourglass[glassid]))
 	if lab_data[playerid].hourglass[glassid].status ~= GLASS_EMPTY then
 		return false
     end
@@ -154,24 +177,31 @@ function command.START_HOURGLASS(playerid,glassid,sandtype)
     hg.acc = 0
     hg.gold_loss = 0
     hg.gold_can_get = math.random(GOLD_LOWER_TBL[sandtype],GOLD_UPPER_TBL[sandtype])
+    hg.unique_id = os.date("%Y-%m-%d %X")
 
     add_to_working_table(hg)
-	log("here".. hg.gold_can_get)
 	return true
 end
 
-function command.HELP_FRIEND(playerid,targetid,glassid)
-	local hg = lab_data[targetid].glassid
+function command.HELP_FRIEND(playerid,targetid,glassid,unique_id)
+	log ("help friend"..playerid.." "..targetid.." "..glassid.." "..unique_id)
+	local hg = lab_data[targetid].hourglass[glassid]
 	if hg.status ~= GLASS_PRODUCING then
+		return false
+	elseif hg.unique_id ~= unique_id then
 		return false
 	else
 		hg.acc = hg.acc+HELP_ACC
+		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
+		if res then
+			skynet.call(agent,"lua","lab_friend_helped")
+		end
 		return true,math.floor(hg.gold_can_get*HELP_GOLD_PERCENT)
 	end
 end
 
 function command.MATCH_PLAYER()
-	local playerid = 180
+	local playerid = 904
     local basic = skynet.call("DATA_CENTER","lua","get_player_data_part",playerid,"basic")
 	return {
         result = 1,
@@ -182,10 +212,18 @@ function command.MATCH_PLAYER()
 	}
 end
 
+function command.START_STEAL(targetid)
+	if is_safe(targetid) then
+		return false
+	else
+		protect_player(targetid)
+		return true
+	end
+end
+
 
 function command.STEAL(playerid,targetid,result)
-	local count = lab_data[playerid].atk_count
-	if count >= 10 then
+	if  is_safe(targetid) then
 		return false
 	else
 		if result == 1 then
@@ -216,12 +254,23 @@ function command.STEAL(playerid,targetid,result)
 	   		    level = basic.level
 	   		}
 	   		lab_data[playerid].atk_count = lab_data[playerid].atk_count + 1
+
+            local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
+			if res then
+				skynet.call(agent,"lua","lab_friend_helped")
+			end
+
 	   		return true,gold_steal_total
 
 	   	elseif result == 0 then
 
 	   		lab_data[playerid].be_attacked_list[count+1] = { playerid = playerid ,gold = 0 ,nickname = "haha",result = false}
 	   		lab_data[playerid].atk_count = lab_data[playerid].atk_count + 1
+
+	   		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
+			if res then
+				skynet.call(agent,"lua","lab_friend_helped")
+			end
 	   	    return true,0
 
 	   	end
@@ -241,6 +290,7 @@ function command.HARVEST(playerid,glassid)
         hourglass.sandtype = -1
         hourglass.acc = 0
         hourglass.gold_can_get = 0
+        hourglass.unique_id = ""
         return true,gold
     else
     	return false
@@ -259,6 +309,7 @@ function command.QUICK_HARVEST(playerid,glassid)
 		hourglass.sandtype = -1
 		hourglass.acc = 0 
 		hourglass.gold_can_get = 0
+		hourglass.unique_id = ""
 		remove_from_working_table(hourglass)
 		return true,gold
 	else 
@@ -293,20 +344,17 @@ function command.UNLOCK_HOURGLASS(playerid,glassid)
 	end
 end
 
-local function update()
+local function update_working_glass()
 	while true do
 		local count = 0
 		local pairs = pairs
-		log("update"..dump(working_glasses))
 	    for _,player in pairs(working_glasses) do
 	    	for _,v in pairs(player) do
 		    	v.curtime = v.curtime + 1
-		    	log("curtime "..v.curtime)
 		    	if v.curtime >= math.floor(TIME_TBL[v.sandtype] * (1 - v.acc * 0.01)) then
 		    		v.status = GLASS_FULL
 		    		v.curtime = 0
 		    		remove_from_working_table(v)
-		    		log("remove glass")
 		    	end
 		    	count = count + 1		    	
 		    end
@@ -319,6 +367,33 @@ local function update()
 end
 
 
+
+
+local function robot_register()
+	for i,v in pairs(ROBOT_IDS) do
+		command.REGISTER(v)
+		command.UNLOCK_HOURGLASS(v,2)
+		command.UNLOCK_HOURGLASS(v,3)
+	end
+end
+
+local function robot_work()
+    while true do
+        for _,robotid in pairs(ROBOT_IDS) do	
+        	for _,hg in pairs(lab_data[robotid].hourglass) do
+        		if hg.status == GLASS_EMPTY then
+        			command.START_HOURGLASS(hg.playerid,hg.glassid,math.random(1,3))
+        		elseif hg.status == GLASS_FULL then
+        			command.HARVEST(hg.playerid,hg.glassid)
+        		end
+        	end
+        end
+
+    	skynet.sleep(100)
+    end
+end
+
+
 skynet.start(function()
 	skynet.dispatch("lua", function(session, address, cmd, ...)
 		local f = command[string.upper(cmd)]
@@ -328,6 +403,9 @@ skynet.start(function()
 			error(string.format("Unknown command %s", tostring(cmd)))
 		end
 	end)
-	skynet.fork(update)
+	skynet.fork(update_working_glass)
+	skynet.fork(update_safe_tbl)
+	skynet.fork(robot_register)
+	skynet.fork(robot_work,1000)
 	skynet.register "LAB_SERVICE"
 end)
