@@ -14,8 +14,10 @@ function taskmgr:finish_task(taskid)
 	if player.tasks and player.tasks[taskid] and player.tasks[taskid].percent == 100 then
 		player.tasks[taskid] = nil
 		self:add_to_finished_table(taskid)
+		 
         local detail = self:get_task_details(taskid)
-
+        player.config.task_total_score = player.config.task_total_score + detail.score
+        self:update_tasks_by_condition_type(15)
 		if detail.continue ~= nil and detail.continue ~= -1 then
             self:add_task(detail.continue)
         end
@@ -40,10 +42,11 @@ function taskmgr:cal_task_percent(taskid)
 	local param1 = details.needs_target
 	local param2 = details.needs_num
 	--log ("cal_task_percent "..param1.." "..param2)
-	if self:check_condition(condition_type,param1,param2) then
+    local finished,percent = self:check_condition(condition_type,param1,param2)
+	if finished then
 		return 100
 	else
-		return 0
+		return percent or 0
 	end
 end
 
@@ -104,7 +107,6 @@ function taskmgr:trigger_task(thetype)
 		end	
 	end
 end
-
 
 -- get reward for a task
 function taskmgr:get_reward(taskid)
@@ -213,6 +215,13 @@ function taskmgr:have_finished_task(taskid)
 	return self.player.config.finished_tasks[taskid] ~= nil 
 end
 
+function  taskmgr:have_enough_daily_score(score_need)
+    local score = math.floor(self.player.config.task_total_score/score_need*100)
+    if score > 100 then score = 100 end
+    log (""..self.player.config.task_total_score.." "..score_need)
+    return score==100,score
+end
+
 taskmgr.condition_checker = {
 	taskmgr.have_get_enough_level,    --1
 	taskmgr.have_souls,                 --2
@@ -228,7 +237,7 @@ taskmgr.condition_checker = {
 	taskmgr.have_fight_player_enough_time,     --12
 	taskmgr.have_talked_enough_times,      --13
 	taskmgr.have_enough_online_time,       --14
-   	taskmgr.have_finished_task,         --15
+    taskmgr.have_enough_daily_score,    -- 15
 }
 
 

@@ -62,6 +62,7 @@ function command.CREATE_PLAYER(nickname)
         soulid_3v3 = { 1,2,3 } ,
         finished_tasks = {} ,
         guide_step = 0,
+        task_total_score = 0,
     }
     player.friend = {
         905,904,903

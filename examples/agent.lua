@@ -817,7 +817,6 @@ function REQUEST:create_new_player()
 
     return { result = 1 , playerid = newplayerid }
 
-
 end
 
 

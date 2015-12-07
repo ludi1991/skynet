@@ -668,6 +668,9 @@ lab_start_steal 58 {
     }
 }
 
+
+
+
 ]]
 
 proto.s2c = sprotoparser.parse [[
