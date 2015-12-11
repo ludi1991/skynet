@@ -65,6 +65,7 @@ local equipData    = require "data.equipdata"
 
 --单个武器娘属性   
 function fp_calculator:get_soul_fightpower(player,soulid)
+	--log("get_soul_fightpower"..dump(player))
 	local playerbasic = player["basic"]
 	local playersoul = player["souls"]
 	local items = {}
@@ -75,6 +76,9 @@ function fp_calculator:get_soul_fightpower(player,soulid)
 			for k1,v1 in pairs(v.itemids) do
 				if v1 ~= -1 and player.items[v1] then
 					local itemtmp = player.items[v1]
+					if equipData[itemtmp.itemtype] == nil then
+						log ("bug!! "..itemtmp.itemtype)
+					end
 					local quality = equipData[itemtmp.itemtype].equip_quality
 					local level   = itemtmp.itemextra%100
 					local value   = 0

@@ -27,6 +27,7 @@ skynet.start(function()
 			if code ~= 200 then
 				response(id, code)
 			else
+
 				local tmp = {}
 				if header.host then
 					table.insert(tmp, string.format("host: %s", header.host))
@@ -44,6 +45,7 @@ skynet.start(function()
 					table.insert(tmp, string.format("%s = %s",k,v))
 				end
 				table.insert(tmp, "-----body----\n" .. body)
+				log("heihei"..dump(tmp))
 				response(id, code, table.concat(tmp,"\n"))
 			end
 		else

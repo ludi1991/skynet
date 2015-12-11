@@ -1,8 +1,10 @@
 local skynet = require "skynet"
 require "skynet.manager"	-- import skynet.register
 
-
 local lab_data = {}
+
+local queue = require "skynet.queue"
+local cs = queue()
 
 local working_glasses = {}
 
@@ -27,13 +29,17 @@ local HELP_ACC = 10
 local HELP_GOLD_PERCENT = 0.03
 local STEAL_GOLD_PERCENT = 0.1
 
-local SAFE_TIME_GIVEN = 600
+local SAFE_TIME_GIVEN = 20
 
 local TIME_TBL = {
 	60*60,
 	60*60*2,
 	60*60*3,
 }
+
+-- local TIME_TBL = {
+--     5,10,15
+-- }
 
 local GOLD_LOWER_TBL = {
 	5000,
@@ -47,6 +53,8 @@ local GOLD_UPPER_TBL = {
 	30000,
 	150000,
 }
+
+
 
 
 local function add_to_working_table(hg)
@@ -84,9 +92,10 @@ end
 local function update_safe_tbl()
 	while true do
 		for playerid,_ in pairs(safe_tbl) do
+			log("safe_tbl,playerid "..playerid..", safe_time "..lab_data[playerid].safe_time)
 			lab_data[playerid].safe_time = lab_data[playerid].safe_time - 1
 			if lab_data[playerid].safe_time <= 0 then
-				stop_protect_player()
+				stop_protect_player(playerid)
 			end
 		end
 		skynet.sleep(100)
@@ -95,9 +104,9 @@ end
 
 local function cal_steal_gold(hourglass)
 	if hourglass.status == GLASS_PRODUCING or hourglass == GLASS_FULL then
-		return math.floor(hourglass.curtime / (TIME_TBL(hourglass.sandtype) * (1-0.01*hourglass.acc)) * hourglass.gold_can_get)
+		return math.floor(hourglass.curtime / (TIME_TBL[hourglass.sandtype] * (1-0.01*hourglass.acc)) * hourglass.gold_can_get)
 	else
-		return -1
+		return 0
 	end
 end
 
@@ -109,7 +118,7 @@ function command.REGISTER(playerid)
 		lab_data[playerid] = 
 		{ 
 			keeper = 1 , 
-			atk_count = 0,
+			atk_count = 2,
 			safe_time = -1,
 	        be_attacked_list = {
 	            [1] = { playerid = 905, lost = 0, nickname = "abc",head_sculpture = 3,result = false ,attack_time = os.date("%Y-%m-%d %X"),level = 3},
@@ -192,10 +201,12 @@ function command.HELP_FRIEND(playerid,targetid,glassid,unique_id)
 		return false
 	else
 		hg.acc = hg.acc+HELP_ACC
+
 		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
 		if res then
-			skynet.call(agent,"lua","lab_friend_helped")
+			pcall(skynet.call,agent,"lua","lab_friend_helped")
 		end
+
 		return true,math.floor(hg.gold_can_get*HELP_GOLD_PERCENT)
 	end
 end
@@ -214,67 +225,66 @@ end
 
 function command.START_STEAL(targetid)
 	if is_safe(targetid) then
+		log("start_steal false")
 		return false
 	else
+		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
+		if res then
+			pcall(skynet.call,agent,"lua","lab_stolen")
+		end
 		protect_player(targetid)
+		log("start_steal true")
 		return true
 	end
 end
 
 
 function command.STEAL(playerid,targetid,result)
-	if  is_safe(targetid) then
-		return false
-	else
-		if result == 1 then
+	log("steal!"..playerid.." "..targetid.." "..result)
+	
+	local player_data = lab_data[playerid]
+	local target_data = lab_data[targetid]
 
-			local gold_steal_total = 0
-
-		    for i=1,3 do
-		    	if hourglass.status == GLASS_PRODUCING or hourglass == GLASS_FULL then
-		    		local hg = lab_data[playerid].hourglass[i]
-		    		local gold = cal_steal_gold(hg)
-		    		hg.gold_loss = hg.gold_loss + gold
-		            gold_steal_total = gold_steal_total + gold
-		        else
-		        	-- nothing
-		        end
-		    end
-            
-            local basic = skynet.call("DATA_CENTER","lua","get_player_data_part",playerid,"basic")
-
-	   		lab_data[playerid].be_attacked_list[count+1] = 
-	   		{   
-	   			playerid = playerid , 
-	   		    gold = gold_steal_total ,
-	   		    nickname = basic.nickname, 
-	   		    head_sculpture = basic.head_sculpture,
-	   		    result = true,
-	   		    attack_time = os.date("%Y-%m-%d %X"),
-	   		    level = basic.level
-	   		}
-	   		lab_data[playerid].atk_count = lab_data[playerid].atk_count + 1
-
-            local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
-			if res then
-				skynet.call(agent,"lua","lab_friend_helped")
-			end
-
-	   		return true,gold_steal_total
-
-	   	elseif result == 0 then
-
-	   		lab_data[playerid].be_attacked_list[count+1] = { playerid = playerid ,gold = 0 ,nickname = "haha",result = false}
-	   		lab_data[playerid].atk_count = lab_data[playerid].atk_count + 1
-
-	   		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
-			if res then
-				skynet.call(agent,"lua","lab_friend_helped")
-			end
-	   	    return true,0
-
-	   	end
+	local gold_steal_total = 0
+   
+    if result == 1 then
+	    for i=1,3 do
+	    	local hg = target_data.hourglass[i]
+	    	if hg.status == GLASS_PRODUCING or hg == GLASS_FULL then
+	    		local gold = cal_steal_gold(hg)
+	    		hg.gold_loss = hg.gold_loss + gold
+	            gold_steal_total = gold_steal_total + gold
+	        else
+	        	-- nothing
+	        end
+	    end
 	end
+    
+    local basic = skynet.call("DATA_CENTER","lua","get_player_data_part",playerid,"basic")
+    
+	target_data.be_attacked_list[target_data.atk_count+1] = 
+	{   
+		playerid = playerid , 
+	    lost = gold_steal_total ,
+	    nickname = basic.nickname, 
+	    head_sculpture = basic.head_sculpture,
+	    result = result == 0 and true or false,
+	    attack_time = os.date("%Y-%m-%d %X"),
+	    level = basic.level
+	}
+	target_data.atk_count = target_data.atk_count + 1
+
+    local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
+
+	if res then
+		pcall(skynet.call,agent,"lua","lab_stolen")
+	end
+
+    log(""..playerid.."success steal "..targetid)
+
+	return true,gold_steal_total
+
+	
 end
 
 
@@ -320,8 +330,10 @@ end
 
 function command.GET_DATA(playerid)
 	if lab_data[playerid] then
-		local fight_data = skynet.call("DATA_CENTER","lua","get_player_fight_data",playerid,lab_data[playerid].keeper)
-		return true, { lab_data = lab_data[playerid] , fight_data = fight_data }
+		local keeper = lab_data[playerid].keeper
+		local soul = skynet.call("DATA_CENTER","lua","get_player_data_part",playerid,"souls")
+		local items = skynet.call("DATA_CENTER","lua","generate_soul_items",playerid,keeper)
+		return true, { lab_data = lab_data[playerid] , fight_data = { soul = soul[keeper] , items = items}}
 	else
 		return false
 	end
@@ -360,12 +372,11 @@ local function update_working_glass()
 		    end
 	    end
         
-        log(""..count.." glasses is working ")
+      --  log(""..count.." glasses is working ")
 
 	    skynet.sleep(100)
 	end
 end
-
 
 
 
@@ -394,11 +405,14 @@ local function robot_work()
 end
 
 
+
+
 skynet.start(function()
 	skynet.dispatch("lua", function(session, address, cmd, ...)
 		local f = command[string.upper(cmd)]
 		if f then
-			skynet.ret(skynet.pack(f(...)))
+			cs(skynet.ret,skynet.pack(f(...)))
+		--	skynet.ret(skynet.pack(f(...)))
 		else
 			error(string.format("Unknown command %s", tostring(cmd)))
 		end

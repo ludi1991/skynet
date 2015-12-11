@@ -4,6 +4,8 @@ local xpcall = xpcall
 local traceback = debug.traceback
 local table = table
 
+
+
 function skynet.ldqueue(callback)
 	local callback = callback
 	local current_thread

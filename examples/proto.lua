@@ -33,6 +33,8 @@ proto.c2s = sprotoparser.parse [[
     name 1 : string           #玩家昵称
     rank 2 : integer           #玩家排名
     score 3 : integer         #分数
+    head_sculpture 4 : integer #头像
+    level 5 : integer 
 }
 
 .skill {
@@ -54,10 +56,10 @@ proto.c2s = sprotoparser.parse [[
     level 3 : integer
     one_vs_one_fp 4 : integer
     one_vs_one_soul 5: soul
-    one_vs_one_items 6 : *item
+    one_vs_one_items 6 : *item(itemid)
     three_vs_three_fp 7 : integer
-    three_vs_three_souls 8 : *soul
-    three_vs_three_items 9 : *item
+    three_vs_three_souls 8 : *soul(soulid)
+    three_vs_three_items 9 : *item(itemid)
 }
 
 #fight data
@@ -312,7 +314,6 @@ get_fight_data 23 {
         player_data 1 : fightdata
         enemy_rank 2 : *integer
         player_rank 3 : integer
-
     }
 }
 
@@ -409,13 +410,6 @@ set_fight_soul 31 {
     }
 }
 
-#获得对战玩家的id
-get_fight_player_ids 32 {
-    response {
-        one_vs_one_ids 0 : *integer
-        three_vs_three_ids 1 : *integer
-    }
-}
 
 start_fight_with_player 33 {
     request {

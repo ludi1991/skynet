@@ -3,15 +3,7 @@ local statmgr = {}
 
 function statmgr:set_player(player)
 	self.player = player
-	if player.config.stat == nil then
-		player.config.stat = {
-			gold_consumed = 0 ,
-	        diamond_consumed = 0 , 
-	        melt_times = 0 ,
-	        total_online_time = 0 ,
-	    }
-	end
-	self.stat = player.config.stat
+	self.stat = player.stat
 end
 
 function statmgr:add_gold_consumed(count)
@@ -53,6 +45,20 @@ end
 function statmgr:get_total_online_time()
 	local stat = self.stat
 	return stat.total_online_time
+end
+
+function statmgr:set_soul_fp(soulid,fp)
+    self.stat.fight_power[soulid] = fp
+	return true
+end
+
+-- return single if soulid is available, return a table of all fight power if not soulid is available
+function statmgr:get_soul_fp(soulid)
+	if soulid ~= nil then
+		return self.stat.fight_power[soulid] or 0
+	else
+		return self.stat.fight_power
+	end
 end
 
 

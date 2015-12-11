@@ -3,8 +3,32 @@ require "skynet.manager"	-- import skynet.register
 
 local command = {}
 
-function command.GET_RANK_DATA(key)
+local rank_single = {}
+local rank_team = {}
+
+local ROBOT_COUNT = 100
+
+function command.REGISTER(playerid)
 end
+
+
+function command.GET_PLAYERID_BY_INDEX(index,rank_type)
+    return 1000000+index
+end
+
+function command.GET_INDEX_BY_PLAYERID(playerid,rank_type)
+    return 10000
+end
+
+function command.SET_FIGHT_POWER(playerid,power,rank_type)
+    return true
+end
+
+
+local function add_robot()
+end
+
+
 
 
 skynet.start(function()
@@ -17,4 +41,5 @@ skynet.start(function()
 		end
 	end)
 	skynet.register "RANK_SERVICE"
+
 end)
