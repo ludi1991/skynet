@@ -751,18 +751,6 @@ function CMD.start(conf)
 		end
 	end)
 
-	-- skynet.fork(function()
-	-- 	while true do
-	-- 		print "update_task"
-	-- 		send_package(send_request("update_task",{
-	-- 		    task = { taskid = 0,type = 0,description = "first task",percent = 100}
-	-- 		}
-	-- 		))
-
-	-- 		skynet.sleep(1000)
-	-- 	end
-	-- end)
-
 	client_fd = fd
 	skynet.call(gate, "lua", "forward", fd)
 end
@@ -787,5 +775,4 @@ skynet.start(function()
 		else
 		end
 	end)
-	taskmgr:get_task_details(3)
 end)
