@@ -1,7 +1,7 @@
 local statmgr = {}
 
 
-function statmgr:set_player(player)
+function statmgr:init(player)
 	self.player = player
 	self.stat = player.stat
 end
@@ -61,5 +61,31 @@ function statmgr:get_soul_fp(soulid)
 	end
 end
 
+function statmgr:get_stat(stattype)
+	return self.stat[stattype]
+end
+
+function statmgr:set_stat(stattype,value)
+	self.stat[stattype] = value
+end
+
+function statmgr:add_stat(stattype,value)
+	value = value or 1
+	self.stat[stattype] = self.stat[stattype] + value
+end
+
+function statmgr:get_daily_stat(stattype)
+	return self.stat.daily[stattype]
+end
+
+function statmgr:set_daily_stat(stattype,value)
+	self.stat.daily[stattype] = value
+end
+
+function statmgr:add_daily_stat(stattype,value)
+	value = value or 1
+	log(stattype)
+	self.stat.daily[stattype] = self.stat.daily[stattype] + value
+end
 
 return statmgr

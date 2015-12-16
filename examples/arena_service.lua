@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 require "skynet.manager"    -- import skynet.register
-
 local command = {}
 
 
@@ -100,6 +99,8 @@ function command.FIGHT(playerid,enemyid,arena_type,result)
         rank_id_tbl[playerrank],rank_id_tbl[enemyrank] = enemyid,playerid
     else
     end
+
+
 
     unlock_player(playerid,arena_type)
     unlock_player(enemyid,arena_type)

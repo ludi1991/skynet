@@ -71,8 +71,7 @@ local function add_gold(value)
         player.basic.gold = player.basic.gold + value
         if value < 0 then
         	statmgr:add_gold_consumed(-value)
-        	taskmgr:update_tasks_by_condition_type(5)
-
+        	taskmgr:update_tasks_by_condition_type(E_HAVE_CONSUMED_ENOUGH)
         end
 	    return true
     end
@@ -91,7 +90,7 @@ local function add_diamond(value)
             player.basic.diamond = player.basic.diamond + value
             if value < 0 then
             	statmgr:add_diamond_consumed(-value)
-            	taskmgr:update_tasks_by_condition_type(5)
+            	taskmgr:update_tasks_by_condition_type(E_HAVE_CONSUMED_ENOUGH)
             end
 		    return true
         end
@@ -131,13 +130,15 @@ end
 
 --同步战斗数据到redis
 local function sync_fight_data_to_redis()
-	local single_fp = fp_cal:get_highest_fightpower(player)
-	local team_fp = fp_cal:get_player_fightpower(player)
-	ofp = fp_cal:get_1v1_fightpower(player)
-	tfp = fp_cal:get_3v3_fightpower(player)
-    for i,_ in pairs(player.souls) do
-        local fp = fp_cal:get_soul_fightpower(player,i)
-        statmgr:set_soul_fp(i,fp)
+    if redis_need_sync then
+    	local single_fp = fp_cal:get_highest_fightpower(player)
+    	local team_fp = fp_cal:get_player_fightpower(player)
+    	ofp = fp_cal:get_1v1_fightpower(player)
+    	tfp = fp_cal:get_3v3_fightpower(player)
+        for i,_ in pairs(player.souls) do
+            local fp = fp_cal:get_soul_fightpower(player,i)
+            statmgr:set_soul_fp(i,fp)
+        end
     end
 end
 
@@ -192,15 +193,15 @@ function REQUEST:login()
 	set_sync_redis_flag()
 
     log ("player "..self.playerid.." is initalized!","info")
-   -- log(dump(player))
+    log(dump(player))
 
-    taskmgr:set_player(player)
-    statmgr:set_player(player)
-    itemmgr:set_player(player)
-    labmgr:set_player(player)
-    friendmgr:set_player(player)
-    rankmgr:set_player(player)
-    arenamgr:set_player(player)
+    taskmgr:init(player)
+    statmgr:init(player)
+    itemmgr:init(player)
+    labmgr:init(player)
+    friendmgr:init(player)
+    rankmgr:init(player)
+    arenamgr:init(player)
 
 
     skynet.fork(function()
@@ -253,6 +254,7 @@ function REQUEST:get_server_time()
 end
 
 function REQUEST:pass_boss_level()
+    log("pass_boss_level"..dump(self.items))
 	add_gold(self.gold)
 	add_diamond(self.diamond)
 
@@ -265,9 +267,13 @@ function REQUEST:pass_boss_level()
 	if player.basic.level == self.level then
         player.basic.level = player.basic.level + 1
     end
+    statmgr:add_stat("kill_boss")
+    statmgr:add_daily_stat("kill_boss")
 
-    taskmgr:update_tasks_by_condition_type(1)
-    taskmgr:trigger_task(1)
+    taskmgr:update_tasks_by_condition_type(E_HAVE_GET_ENOUGH_LEVEL)
+    taskmgr:update_tasks_by_condition_type(E_KILL_BOSS)
+    taskmgr:update_tasks_by_condition_type(E_KILL_BOSS_TOTAL)
+    taskmgr:trigger_task_by_type(1)
 
 
 	return { result = 1 }
@@ -340,9 +346,10 @@ function REQUEST:set_cur_stayin_level()
 end
 
 function REQUEST:strengthen_item()
-    if have_enough_gold(self.gold) and have_enough_stone(self.stone) and
-        have_enough_diamond(self.diamond) and have_item(self.item.itemid) then
-        print ("strengthen_item"..dump(self.item))
+    if have_enough_gold(self.gold) and 
+       have_enough_stone(self.stone) and
+       have_enough_diamond(self.diamond) and 
+       have_item(self.item.itemid) then
 
         add_gold(-self.gold)
         add_diamond(-self.diamond)
@@ -350,6 +357,8 @@ function REQUEST:strengthen_item()
         update_item(self.item)
         set_sync_redis_flag()
 
+        statmgr:add_daily_stat("strengthen_equip")
+        taskmgr:update_tasks_by_condition_type(E_STENGTHEN_EQUIP)
         return { result = 1}
     end
 
@@ -359,14 +368,17 @@ function REQUEST:strengthen_item()
 end
 
 function REQUEST:upgrade_item()
-	if have_enough_gold(self.gold) and have_enough_diamond(self.diamond)
-	   and have_item(self.item.itemid) then
+	if have_enough_gold(self.gold) and 
+       have_enough_diamond(self.diamond) and 
+       have_item(self.item.itemid) then
 
-	   add_gold(-self.gold)
-	   add_diamond(-self.diamond)
-	   update_item(self.item)
-       set_sync_redis_flag()
-	   return { result = 1}
+    	add_gold(-self.gold)
+    	add_diamond(-self.diamond)
+    	update_item(self.item)
+        set_sync_redis_flag()
+        statmgr:add_daily_stat("upgrade_equip")
+        taskmgr:update_tasks_by_condition_type(E_UPGRADE_EQUIP)
+        return { result = 1 }
 	end
 
 	return { result = 0}
@@ -386,7 +398,7 @@ function REQUEST:melt_item()
     itemmgr:add_stone(self.stone)
 
     statmgr:add_melt_times(1)
-    taskmgr:update_tasks_by_condition_type(11)
+    taskmgr:update_tasks_by_condition_type(E_HAVE_MELT_ENOUGH_TIMES)
 
     return { result = 1 }
 
@@ -569,6 +581,48 @@ function REQUEST:lab_start_steal()
     return labmgr:lab_start_steal(self.playerid)
 end
 
+function REQUEST:quick_pass_level()
+    local times = statmgr:get_daily_stat("quick_fight")
+    if times < 3 then
+        if times > 1 then
+            if have_enough_diamond(20) then
+                add_diamond(-20)
+            else
+                return { result = 0 }
+            end            -- cost 20 
+        end
+        add_gold(self.gold)
+        add_diamond(self.diamond)
+        if self.items ~= nil then
+            for _,v in pairs(self.items) do
+                player.items[v.itemid] = v
+            end
+        end
+        statmgr:add_daily_stat("quick_fight")
+        statmgr:add_stat("quick_fight")
+        taskmgr:update_tasks_by_condition_type(E_QUICK_FIGHT)
+        taskmgr:update_tasks_by_condition_type(E_QUICK_FIGHT_TOTAL)
+        return { result = 1 }
+    else
+        return { result = 0 }
+    end
+end
+
+
+function REQUEST:upgrade_gem_all()
+    local res = itemmgr:upgrade_gem_all(self.diamondid,self.gold)
+    if res > 0 then 
+        return { result = 1, count = res}
+    else
+        return { result = 0, count = 0}
+    end
+end
+
+function get_quick_pass_used_time()
+    local time = statmgr:get_daily_stat("quick_fight")
+    return { times = time }
+end
+
 
 --落地数据到数据库
 local function save_to_db()
@@ -580,15 +634,15 @@ function REQUEST:create_new_player()
     newplayerid,player = skynet.call("DATA_CENTER","lua","create_player",self.nickname)
 
     -- 0 means task for new player
-    taskmgr:set_player(player)
-    statmgr:set_player(player)
-    itemmgr:set_player(player)
-    labmgr:set_player(player)
-    friendmgr:set_player(player)
-    arenamgr:set_player(player)
-    rankmgr:set_player(player)
+    taskmgr:init(player)
+    statmgr:init(player)
+    itemmgr:init(player)
+    labmgr:init(player)
+    friendmgr:init(player)
+    arenamgr:init(player)
+    rankmgr:init(player)
 
-    taskmgr:trigger_task(0)
+    taskmgr:trigger_task_by_type(0)
     labmgr:lab_register()
     skynet.call("ARENA_SERVICE","lua","register",newplayerid)
 
@@ -615,33 +669,39 @@ local function request(name, args, response)
 end
 
 
+local heartbeat_miss_cnt = 0
+
 -- 协程在call的时候将不会挂起
 local cs = queue()
 local function dispatch_with_queue(_,_,type,...)
 	if type == "REQUEST" then
         cs(send_package,request(...))
-		--cs(request,...)
 	else
-		assert(type == "RESPONSE")
-		error "This example doesn't support request client"
+        --log("receive heartbeat callback")
+		heartbeat_miss_cnt = 0
 	end
 end
 
-local function dispatch(_,_,type,...)
-	if type == "REQUEST" then
-		local ok, result  = pcall(request, ...)
-		if ok then
-			if result then
-				send_package(result)
-			end
-		else
-			skynet.error(result)
-		end
-	else
-		assert(type == "RESPONSE")
-		error "This example doesn't support request client"
-	end
-end
+
+
+
+-- local function dispatch(_,_,type,...)
+-- 	if type == "REQUEST" then
+-- 		local ok, result  = pcall(request, ...)
+-- 		if ok then
+-- 			if result then
+-- 				send_package(result)
+-- 			end
+-- 		else
+-- 			skynet.error(result)
+-- 		end
+-- 	else
+-- 		assert(type == "RESPONSE")
+
+      
+-- 		error "This example doesn't support request client"
+-- 	end
+-- end
 
 
 skynet.register_protocol {
@@ -663,7 +723,6 @@ function CMD.lab_friend_helped()
 end
 
 function CMD.lab_stolen()
-    log ("send_stolen"..player.basic.playerid)
 	send_package(send_request("lab_stolen"))
 end
 
@@ -679,13 +738,18 @@ function CMD.start(conf)
 	host = sprotoloader.load(1):host "package"
 	send_request = host:attach(sprotoloader.load(2))
 	log("start","info")
-	-- skynet.fork(function()
-	-- 	while true do
-	-- 		print "send heartbeat"
-	-- 		send_package(send_request "heartbeat")
-	-- 		skynet.sleep(500)
-	-- 	end
-	-- end)
+
+
+	skynet.fork(function()
+		while true do
+			send_package(send_request("heartbeat",nil,5))
+            heartbeat_miss_cnt = heartbeat_miss_cnt + 1
+            if heartbeat_miss_cnt >= 8 then
+                log("client missed!")
+            end
+			skynet.sleep(200)
+		end
+	end)
 
 	-- skynet.fork(function()
 	-- 	while true do

@@ -1,10 +1,14 @@
 local skynet = require "skynet"
+local statmgr 
+local taskmgr 
 local arenamgr = {}
 
 
 
-function arenamgr:set_player(player)
+function arenamgr:init(player)
     self.player = player
+    statmgr = require "gamelogic.statmgr"
+    taskmgt = require "gamelogic.taskmgr"
 end
 
 function arenamgr:get_player_arena_rank(arena_type)
@@ -70,15 +74,29 @@ function arenamgr:get_fight_data(arena_type)
     local player_data = gen_fd(self.player.basic.playerid)
     local player_rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,arena_type)
 
+    log ("rank"..player_rank)
+    local ids
+    if player_rank > 10 then
+        log("rank"..math.floor(player_rank*0.9))
+        log("rank"..math.floor(player_rank*0.6))
+        log("rank"..math.floor(player_rank*0.3))
+        ids = 
+        { 
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.9)),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.6)),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.3)),
+        }
+    elseif player_rank <= 10 and player_rank >=4 then
+        ids = {
+            player_rank - 1,
+            player_rank - 2,
+            player_rank - 3,
+        }
+    elseif player_rank <= 3 then
+        local i = player_rank-1
+        while i>0 do table.insert(ids,i) end
+    end
 
-    local ids = 
-    { 
-        skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.9)),
-        skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.8)),
-        skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.7)),
-    }
-    
-    
     
     local enemy_data = {}
     local enemy_rank = {}
@@ -99,6 +117,27 @@ end
 function arenamgr:fight(enemyid,arena_type,result)
     local res = skynet.call("ARENA_SERVICE","lua","fight",self.player.basic.playerid,enemyid,arena_type,result)
     if res then
+
+       -- task check
+        local time_str = arena_type == 1 and "arena_single_times" or "arena_team_times"
+        local condition_type_daily = arena_type == 1 and E_ARENA_SINGLE or E_ARENA_TEAM
+        local condition_type_time = arena_type == 1 and E_ARENA_SINGLE_TOTAL or E_ARENA_TEAM_TOTAL
+        statmgr:add_stat(time_str) 
+        statmgr:add_daily_stat(time_str) 
+        taskmgr:update_tasks_by_condition_type(condition_type_time)
+        taskmgr:update_tasks_by_condition_type(condition_type_daily)
+         
+        if result == 1 then
+            local vic_str = arena_type == 1 and "arena_single_victory" or "arena_team_victory"
+            local con_type_vic_time = arena_type == 1 and E_ARENA_SINGLE_VICTORY_TOTAL or E_ARENA_TEAM_VICTORY_TOTAL
+            local con_type_vic_daily = arena_type == 1 and E_ARENA_SINGLE_VICTORY or E_ARENA_TEAM_VICTORY
+            local con_type_rank = arena_type == 1 and E_ARENA_RANK_1v1 or E_ARENA_RANK_3v3
+            statmgr:add_stat(vic_str)
+            statmgr:add_daily_stat(vic_str)
+            taskmgr:update_tasks_by_condition_type(con_type_vic_daily)
+            taskmgr:update_tasks_by_condition_type(con_type_vic_time)
+            taskmgr:update_tasks_by_condition_type(con_type_rank)
+        end
         return { result = 1 }
     else
         return { result = 0 }

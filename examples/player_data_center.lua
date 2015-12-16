@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 require "skynet.manager"	-- import skynet.register
 local player_data = {}
+
 local count = 0
 
 local command = {}
@@ -142,7 +143,31 @@ local function get_robot_data(playerid)
         diamond_consumed = 0 , 
         melt_times = 0 ,
         total_online_time = 0 ,
-        fight_power = { [1] = 77 , [2] = 25, [3] = 37,[4] = 55}
+        kill_boss = 0,
+        quick_fight = 0,
+        lab_harvest = 0,
+        lab_steal = 0,
+        lab_help = 0,
+        arena_single_times = 0,
+        arena_team_times = 0,
+        arena_single_victory = 0,
+        arena_team_victory = 0,
+        fight_power = { [1] = 77 , [2] = 25, [3] = 37,[4] = 55},
+        daily = {
+            strengthen_equip = 0,
+            upgrade_equip = 0,
+            inset_gem = 0,
+            upgrage_gem = 0,
+            arena_single_times = 0,
+            arena_team_times = 0,
+            arena_single_victory = 0,
+            arena_team_victory = 0,
+            lab_harvest = 0,
+            lab_steal = 0,
+            lab_help = 0,
+            kill_boss,
+            quick_fight = 0,
+        }
     }
     return player,4
 end
@@ -247,7 +272,31 @@ function command.CREATE_PLAYER(nickname)
         diamond_consumed = 0 , 
         melt_times = 0 ,
         total_online_time = 0 ,
-        fight_power = { [1] = 0 }
+        kill_boss = 0,
+        quick_fight = 0,
+        lab_harvest = 0,
+        lab_steal = 0,
+        lab_help = 0,
+        arena_single_times = 0,
+        arena_team_times = 0,
+        arena_single_victory = 0,
+        arena_team_victory = 0,
+        fight_power = { [1] = 77 , [2] = 25, [3] = 37,[4] = 55},
+        daily = {
+            strengthen_equip = 0,
+            upgrade_equip = 0,
+            inset_gem = 0,
+            upgrage_gem = 0,
+            arena_single_times = 0,
+            arena_team_times = 0,
+            arena_single_victory = 0,
+            arena_team_victory = 0,
+            lab_harvest = 0,
+            lab_steal = 0,
+            lab_help = 0,
+            kill_boss = 0,
+            quick_fight = 0,
+        }
     }
 	return newplayerid,player
 end
@@ -282,6 +331,7 @@ end
 -- list type 1 rank  2 arena
 function command.GET_PLAYER_FIGHTPOWER(playerid,ranktype,listtype)
     local player = get_player_data(playerid)
+    log("get_player_fightpower "..playerid)
     local fp = player.stat.fight_power
 
     if listtype == 1 then

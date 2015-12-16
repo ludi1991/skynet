@@ -393,9 +393,13 @@ local function robot_work()
         for _,robotid in pairs(ROBOT_IDS) do	
         	for _,hg in pairs(lab_data[robotid].hourglass) do
         		if hg.status == GLASS_EMPTY then
-        			command.START_HOURGLASS(hg.playerid,hg.glassid,math.random(1,3))
+        		    skynet.timeout(1000,function()
+        				command.START_HOURGLASS(hg.playerid,hg.glassid,math.random(1,3))
+        			end)
         		elseif hg.status == GLASS_FULL then
-        			command.HARVEST(hg.playerid,hg.glassid)
+        			skynet.timeout(1000,function()
+        				command.HARVEST(hg.playerid,hg.glassid)
+        			end)
         		end
         	end
         end

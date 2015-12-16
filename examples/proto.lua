@@ -78,6 +78,7 @@ proto.c2s = sprotoparser.parse [[
     diamond 6 : integer
     items 7: *item
     percent 8: integer    #完成百分比
+    dropid 9 : integer    #投放模型
 }
 
 
@@ -662,6 +663,33 @@ lab_start_steal 58 {
     }
 }
 
+quick_pass_level 59 {
+    request {
+        level 0 : integer  #第几关
+        items 1 : *item
+        gold 2 : integer
+        diamond 3 :integer
+    }
+    response {
+        result 0 : integer
+    }
+}
+
+upgrade_gem_all 60 {
+    request {
+        diamondid 0 :integer
+    }    
+    response {
+        result 0 : integer # 1 success 0 failed
+        count 1 : integer #
+    }
+}
+
+get_quick_pass_used_time 61 {
+    response {
+        times 0: integer 
+    }
+}
 
 
 
@@ -690,9 +718,14 @@ proto.s2c = sprotoparser.parse [[
     diamond 6 : integer
     items 7: *item
     percent 8: integer    #完成百分比
+    dropid 9 : integer    #投放模型
 }
 
-heartbeat 1 {}
+heartbeat 1 {
+    response {
+        msg 0 : integer #
+    }
+}
 
 #聊天返回
 chatting 2 {

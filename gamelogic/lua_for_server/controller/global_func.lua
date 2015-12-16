@@ -89,5 +89,15 @@ function global_getEquipStrengthened(itemvalue)
         equip.armorpenetration = equip.armorpenetration + (addAttri or 0)
     end
 
+       --增加宝石属性
+    if itemvalue.gemsid then
+        for k, gemid in pairs(itemvalue.gemsid) do
+            if gemid~= -1 then
+                local gemdata = allequips_data[gemid]
+                equip[gemdata.main_attribute] = (equip[gemdata.main_attribute] or 0) + gemdata[gemdata.main_attribute]
+            end
+        end
+    end
+
     return equip
 end

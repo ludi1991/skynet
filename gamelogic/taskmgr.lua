@@ -1,7 +1,16 @@
 local taskmgr = {}
 
 local task_data = require "data.task_data"
-local statmgr = require "gamelogic.statmgr"
+local statmgr 
+local itemmgr
+
+
+function taskmgr:init(player)
+    self.player = player
+    statmgr = require "gamelogic.statmgr"
+    itemmgr = require "gamelogic.itemmgr"
+end
+
 
 function taskmgr:get_task_details(taskid)
 	return task_data[taskid]
@@ -16,18 +25,24 @@ function taskmgr:finish_task(taskid)
 		self:add_to_finished_table(taskid)
 		 
         local detail = self:get_task_details(taskid)
-        player.config.task_total_score = player.config.task_total_score + detail.score
-        self:update_tasks_by_condition_type(15)
-		if detail.continue ~= nil and detail.continue ~= -1 then
-            self:add_task(detail.continue)
+        player.config.task_total_score = player.config.task_total_score + detail.finish_per
+        self:update_tasks_by_condition_type(E_HAVE_ENOUGH_DAILY_SCORE)
+
+		if detail.continue ~= nil  then
+            local levels = string:split(detail.continue)
+            for i,v in pairs(levels) do
+                local level = tonumber(v)
+                log("continue "..v)
+                self:trigger_task(v)
+            end
         end
+
 	else
 		log ("taskmgr:finish task failed ,id : "..taskid ,"error")
 	end
 end
 
 function taskmgr:add_task(taskid)
-
 	local player = self.player
 	local percent = taskmgr:cal_task_percent(taskid)
 	self.player.tasks[taskid] = { taskid = taskid , percent = percent}
@@ -68,6 +83,11 @@ function taskmgr:update_task(taskid)
 	end 
 end
 
+function taskmgr:have_finished_task(taskid)
+    local player = self.player
+    return player.config.finished_tasks[taskid] ~= nil
+end
+
 
 function taskmgr:add_to_finished_table(taskid)
 	local player = self.player
@@ -75,8 +95,45 @@ function taskmgr:add_to_finished_table(taskid)
 		if player.config.finished_tasks == nil then
 			player.config.finished_tasks = {}
 		end
-		player.config.finished_tasks[taskid] = true;
+		player.config.finished_tasks[taskid] = true
 	end
+end
+
+function taskmgr:trigger_task(taskid)
+    if self:have_finished_task(taskid) then
+            log ("i have finished task "..taskid )
+            return
+    else
+
+        -- check if pre tasks are finished
+        local details = self:get_task_details(taskid)
+        local pre = details.pre
+
+        if pre then
+            log("pre "..pre)
+            pre = string.split(pre)
+            for i,v in pairs(pre) do
+                local pretask_id = tonumber(v)
+                if self:have_finished_task(pretask_id) == false then
+                    return
+                end
+            end
+        end
+       
+
+
+        if thetype == 0 then
+            if details.trigger_type == 0 then
+                self:add_task(taskid)
+            end         
+        elseif thetype == 1 then                        
+            if v.trigger_type == 1 then
+                if player.basic.level >= v.trigger_condition then
+                    self:add_task(taskid)
+                end
+            end
+        end 
+    end
 end
 
 --check if the task can be triggered ，only 4 types is possile for now 
@@ -86,25 +143,12 @@ end
 -- 2. get new soul
 -- 3. get item
 -- 4. unlock system
-function taskmgr:trigger_task(thetype)
+function taskmgr:trigger_task_by_type(thetype)
 	local player = self.player
     for i,v in pairs(task_data) do
-
-        if self:have_finished_task(v.id) then
-        	log ("i have finished task "..v.id )
-        	-- jump
-		elseif thetype == 0 then
-			
-			if v.trigger_type == 0 then
-				self:add_task(v.id)
-			end			
-		elseif thetype == 1 then						
-			if v.trigger_type == 1 then
-				if player.basic.level >= v.trigger_condition then
-					self:add_task(v.id)
-				end
-			end
-		end	
+        if v.trigger_type == thetype then
+            self:trigger_task(v.id)
+        end
 	end
 end
 
@@ -116,7 +160,7 @@ function taskmgr:get_reward(taskid)
 	if details.extra_reward_taget ~= nil then
 	    item = { itemtype = details.extra_reward_taget , itemcount = extra_reward_num}
 	end
-	return details.gold,details.diamond,item
+	return 100,10,nil
 end
 
 
@@ -126,9 +170,6 @@ function taskmgr:generate_tasks(save_tbl)
     	data = task_data[i]
         
         local items = nil
-        if data.extra_reward_taget ~= nil then
-            items = { { itemid = 0 , itemtype = data.extra_reward_taget , itemextra = 0 , itemcount = data.extra_reward_num } }
-        end
 
     	local task = {
             taskid = v.taskid,
@@ -136,10 +177,11 @@ function taskmgr:generate_tasks(save_tbl)
             icon = data.icon,
             title = data.name,
             descriptions = data.task_des,
-            gold = data.gold,
-            diamond = data.diamond,
+            gold = 100,
+            diamond = 100,
             percent = v.percent,
-            items = items 
+            items = items,
+            dropid = data.drop
     	}
 
 
@@ -148,15 +190,16 @@ function taskmgr:generate_tasks(save_tbl)
     return res
 end
 
-function taskmgr:set_player(player)
-	self.player = player
-end
+
 
 
 function taskmgr:check_condition(type,...)
 	log ("taskmgr check_condition : "..type)
     return self.condition_checker[type](self,...)
 end
+
+
+
 
 -----------------  条件检测
 function taskmgr:have_get_enough_level(level)
@@ -165,12 +208,18 @@ function taskmgr:have_get_enough_level(level)
 end
 
 function taskmgr:have_souls(soul_girl_id)
+    local souls = self.player.souls
+    return souls[soul_girl_id] ~= nil
 end
 
 function taskmgr:have_item(itemtype)
+    return taskmgr:have_item_by_itemtype(itemtype)
 end
 
 function taskmgr:have_unlocked_system(systemid)
+end
+
+function taskmgr:kill_monsters()
 end
 
 --itemtype 1 gold ,itemtype 2 diamond ,itemtype 3 stone
@@ -182,38 +231,13 @@ function taskmgr:have_consumed_enough(itemtype,count)
 	end
 end
 
-function taskmgr:have_passed_level(levelid)
-end
-
-function taskmgr:have_wear_equip(itemid)
-end
-
-function taskmgr:have_learned_skill(skillid)
-end
-
-function taskmgr:have_get_skill_level(skillid,level)
-end
-
-function taskmgr:have_enough_friend(friend)
+function taskmgr:passed_level(levelid)
 end
 
 function taskmgr:have_melt_enough_times(times)
 	return statmgr:get_melt_times() >= times
 end
 
-function taskmgr:have_fight_player_enough_times(type,times)
-end
-
-function taskmgr:have_talked_enough_times(times)
-end
-
-function taskmgr:have_enough_online_time(time)
-	return statmgr:get_online_time() >= time
-end
-
-function taskmgr:have_finished_task(taskid)
-	return self.player.config.finished_tasks[taskid] ~= nil 
-end
 
 function  taskmgr:have_enough_daily_score(score_need)
     local score = math.floor(self.player.config.task_total_score/score_need*100)
@@ -222,22 +246,234 @@ function  taskmgr:have_enough_daily_score(score_need)
     return score==100,score
 end
 
+function taskmgr:have_wear_equip()
+end
+
+function taskmgr:strengthen_equip(need)
+    local count = statmgr:get_daily_stat("strengthen_equip")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:upgrade_equip(need)
+    local count = statmgr:get_daily_stat("upgrade_equip")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:inset_gem(need)
+    local count = statmgr:get_daily_stat("inset_gem")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:upgrade_gem(need)
+    local count = statmgr:get_daily_stat("upgrade_gem")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:equip_resonances(level,count)
+    return 0
+end
+
+function taskmgr:gem_max_level(level)
+    local items = self.player.items
+    local max = 0
+    for gem_quality=1,8 do
+        for gem_type=1,8 do
+            local itemtype = 1100000 + gem_type * 100 + gem_quality
+            if itemmgr:have_item_by_itemtype(itemtype) then
+                max = gem_quality
+                break
+            end
+        end
+    end
+    return max >= level
+end
+
+function taskmgr:arena_single(need)
+    local count = statmgr:get_daily_stat("arena_single_times")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_team(need)
+    local count = statmgr:get_daily_stat("arena_team_times")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_single_victory(need)
+    local count = statmgr:get_daily_stat("arena_single_victory")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_team_victory(need)
+    local count = statmgr:get_daily_stat("arena_team_victory")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_rank_1v1(need)
+    local rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,1)
+    return rank >= need
+end
+
+function taskmgr:arena_rank_3v3(need)
+    local rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,2)
+    return rank >= need
+end
+
+
+function taskmgr:arena_single_total(need)
+    local count = statmgr:get_stat("arena_single_times")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_team_total(need)
+    local count = statmgr:get_stat("arena_team_times")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_single_victory_total(need)
+    local count = statmgr:get_stat("arena_single_victory")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:arena_team_victory_total(need)
+    local count = statmgr:get_stat("arena_team_victory")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+
+function taskmgr:lab_harvest(need)
+    local count = statmgr:get_daily_stat("lab_harvest")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:lab_steal(need)
+    local count = statmgr:get_daily_stat("lab_steal")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:lab_help(need)
+    local count = statmgr:get_daily_stat("lab_help")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:lab_harvest_total(need)
+    local count = statmgr:get_stat("lab_harvest")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:lab_steal_total(need)
+    local count = statmgr:get_stat("lab_steal")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:lab_help_total(need)
+    local count = statmgr:get_stat("lab_help")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:kill_boss(need)
+    local count = statmgr:get_stat("kill_boss")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:kill_boss_total(need)
+    local count = statmgr:get_daily_stat("kill_boss")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:quick_fight(need)
+    local count = statmgr:get_daily_stat("quick_fight")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+function taskmgr:quick_fight_total(need)
+    local count = statmgr:get_stat("quick_fight")
+    local score = math.floor(count/need*100)
+    if score > 100 then score = 100 end
+    return score == 100 ,score
+end
+
+
+
 taskmgr.condition_checker = {
-	taskmgr.have_get_enough_level,    --1
-	taskmgr.have_souls,                 --2
-	taskmgr.have_item,               --3
-	taskmgr.have_unlocked_system,      --4
-	taskmgr.have_consumed_enough,      -- 5
-	taskmgr.have_passed_level,       --6
-	taskmgr.have_wear_equip,         --7
-	taskmgr.have_learned_skill,      --8
-	taskmgr.have_get_skill_level,     --9
-	taskmgr.have_enough_friend,       --10
-	taskmgr.have_melt_enough_times,     --11
-	taskmgr.have_fight_player_enough_time,     --12
-	taskmgr.have_talked_enough_times,      --13
-	taskmgr.have_enough_online_time,       --14
-    taskmgr.have_enough_daily_score,    -- 15
+	[1] = taskmgr.have_get_enough_level,    --1
+	[2] = taskmgr.have_souls,                 --2
+	[3] = taskmgr.have_item,               --3
+	[4] = taskmgr.have_unlocked_system,      --4
+    [5] = taskmgr.kill_monsters,            
+	[6] = taskmgr.have_consumed_enough,      -- 5
+	[7] = taskmgr.have_passed_level,       --6
+	[7] = taskmgr.have_wear_equip,         --7
+	[11] = taskmgr.have_melt_enough_times,     --11
+    [15] = taskmgr.have_enough_daily_score,    -- 15
+    [20] = taskmgr.have_wear_equip,
+    [21] = taskmgr.strengthen_equip,
+    [22] = taskmgr.upgrage_equip,
+    [23] = taskmgr.inset_gem,
+    [24] = taskmgr.upgrade_gem,
+    [25] = taskmgr.equip_resonances,
+    [26] = taskmgr.gem_max_level,
+    [31] = taskmgr.arena_single,
+    [32] = taskmgr.arena_team,
+    [33] = taskmgr.arena_single_victory,
+    [34] = taskmgr.arena_team_victory,
+    [35] = taskmgr.arena_rank_1v1,
+    [36] = taskmgr.arena_rank_3v1,
+    [37] = taskmgr.arena_single_total,
+    [38] = taskmgr.arena_team_total,
+    [39] = taskmgr.arena_single_victory_total,
+    [40] = taskmgr.arena_team_victory_total,
+    [41] = taskmgr.lab_harvest,
+    [42] = taskmgr.lab_steal,
+    [43] = taskmgr.lab_help,
+    [44] = taskmgr.lab_harvest_total,
+    [45] = taskmgr.lab_steal_total,
+    [46] = taskmgr.lab_help_total,
+    [51] = taskmgr.kill_boss,
+    [52] = taskmgr.kill_boss_total,
+    [61] = taskmgr.quick_fight,
+    [62] = taskmgr.quick_fight_total,
 }
 
 

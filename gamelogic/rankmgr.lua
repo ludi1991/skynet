@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local rankmgr = {}
 
 
-function rankmgr:set_player(player)
+function rankmgr:init(player)
     self.player = player
 end
 

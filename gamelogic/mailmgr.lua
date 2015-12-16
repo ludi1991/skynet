@@ -1,7 +1,7 @@
 local mailmgr = {}
 
 
-function mailmgr:set_player(player)
+function mailmgr:init(player)
 	self.player = player
 end
 

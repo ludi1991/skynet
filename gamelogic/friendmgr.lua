@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local friendmgr = {}
 
 
-function friendmgr:set_player(player)
+function friendmgr:init(player)
 	self.player = player
 end
 
