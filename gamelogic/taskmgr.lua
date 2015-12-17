@@ -1,6 +1,7 @@
 local taskmgr = {}
-
+local skynet = require "skynet"
 local task_data = require "data.task_data"
+local drop_data = require "data.drop_data"
 local statmgr 
 local itemmgr
 
@@ -28,12 +29,11 @@ function taskmgr:finish_task(taskid)
         player.config.task_total_score = player.config.task_total_score + detail.finish_per
         self:update_tasks_by_condition_type(E_HAVE_ENOUGH_DAILY_SCORE)
 
-		if detail.continue ~= nil  then
-            local levels = string:split(detail.continue)
+		if detail.continue_task ~= nil  then
+            local levels = string.split(detail.continue_task,",")
             for i,v in pairs(levels) do
                 local level = tonumber(v)
-                log("continue "..v)
-                self:trigger_task(v)
+                self:trigger_task(level)
             end
         end
 
@@ -111,7 +111,7 @@ function taskmgr:trigger_task(taskid)
 
         if pre then
             log("pre "..pre)
-            pre = string.split(pre)
+            pre = string.split(pre,",")
             for i,v in pairs(pre) do
                 local pretask_id = tonumber(v)
                 if self:have_finished_task(pretask_id) == false then
@@ -119,18 +119,12 @@ function taskmgr:trigger_task(taskid)
                 end
             end
         end
-       
 
-
-        if thetype == 0 then
-            if details.trigger_type == 0 then
+        if details.trigger_type == 0 then
+            self:add_task(taskid)        
+        elseif details.trigger_type == 1 then                                
+            if self.player.basic.level >= details.trigger_condition then
                 self:add_task(taskid)
-            end         
-        elseif thetype == 1 then                        
-            if v.trigger_type == 1 then
-                if player.basic.level >= v.trigger_condition then
-                    self:add_task(taskid)
-                end
             end
         end 
     end
@@ -147,6 +141,7 @@ function taskmgr:trigger_task_by_type(thetype)
 	local player = self.player
     for i,v in pairs(task_data) do
         if v.trigger_type == thetype then
+            log ("try trigger "..v.id)
             self:trigger_task(v.id)
         end
 	end
@@ -155,12 +150,17 @@ end
 -- get reward for a task
 function taskmgr:get_reward(taskid)
 	local details = task_data[taskid]
-
-	local item = nil
-	if details.extra_reward_taget ~= nil then
-	    item = { itemtype = details.extra_reward_taget , itemcount = extra_reward_num}
-	end
-	return 100,10,nil
+    local drop = drop_data[details.drop]
+    local items = {} 
+    for i = 1,8 do
+        dropid = drop["dropid"..i]
+        dropnum = drop["dropnum"..i]
+        if dropid ~= nil and dropnum ~= nil then
+            table.insert(items,{ itemtype = dropid, itemcount = dropnum } )   
+        end
+    end
+	
+	return drop.gold,drop.diamond,items
 end
 
 
@@ -168,22 +168,20 @@ function taskmgr:generate_tasks(save_tbl)
 	local res = {}
     for i,v in pairs(save_tbl) do
     	data = task_data[i]
-        
-        local items = nil
-
+        local gold,diamond,items = self:get_reward(i)
     	local task = {
             taskid = v.taskid,
-            type = 1,
+            type = data.task_type,
             icon = data.icon,
             title = data.name,
-            descriptions = data.task_des,
-            gold = 100,
-            diamond = 100,
+            description = data.task_des,
+            gold = gold,
+            diamond = diamond,
             percent = v.percent,
             items = items,
             dropid = data.drop
     	}
-
+        log (""..dump(task))
 
         table.insert(res,task)
     end
@@ -277,8 +275,33 @@ function taskmgr:upgrade_gem(need)
     return score == 100 ,score
 end
 
-function taskmgr:equip_resonances(level,count)
-    return 0
+function taskmgr:equip_resonances(level,count_need)
+
+    local function get_soul_resonance(soul,items)
+        local min = 10
+        for _,id in pairs(soul.itemids) do
+            if id == -1 then
+                log ("min is zero")
+                return 0
+            else
+                local item_quality = items[id].itemtype%10
+                if min > item_quality then
+                    min = item_quality
+                end
+            end
+        end
+        log ("min is ".. min)
+        return min
+    end
+    
+    local count = 0
+    for _,soul in pairs(self.player.souls) do
+        if get_soul_resonance(soul,self.player.items) >= level then
+            count = count + 1
+        end
+    end
+    log("axiba"..count.." "..count_need.." "..level)
+    return count >= count_need
 end
 
 function taskmgr:gem_max_level(level)
@@ -326,12 +349,12 @@ end
 
 function taskmgr:arena_rank_1v1(need)
     local rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,1)
-    return rank >= need
+    return rank <= need
 end
 
 function taskmgr:arena_rank_3v3(need)
     local rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,2)
-    return rank >= need
+    return rank <= need
 end
 
 
@@ -449,7 +472,7 @@ taskmgr.condition_checker = {
     [15] = taskmgr.have_enough_daily_score,    -- 15
     [20] = taskmgr.have_wear_equip,
     [21] = taskmgr.strengthen_equip,
-    [22] = taskmgr.upgrage_equip,
+    [22] = taskmgr.upgrade_equip,
     [23] = taskmgr.inset_gem,
     [24] = taskmgr.upgrade_gem,
     [25] = taskmgr.equip_resonances,

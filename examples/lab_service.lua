@@ -135,6 +135,7 @@ function command.REGISTER(playerid)
 				    gold_can_get = -1,
 				    acc = 0,
 				    unique_id = "",
+				    helped_id = {}
 			    } ,
 			    {
 				    playerid = playerid ,
@@ -145,7 +146,8 @@ function command.REGISTER(playerid)
 				    gold_loss = 0,
 				    gold_can_get = -1,
 				    acc = 0,
-				    unique_id = ""
+				    unique_id = "",
+				    helped_id = {}
 			    } ,  
 			    {
 				    playerid = playerid ,
@@ -157,6 +159,7 @@ function command.REGISTER(playerid)
 				    gold_can_get = -1,
 				    acc = 0,
 				    unique_id = "",
+				    helped_id = {}
 			    } ,   
 			}, 
 	    }
@@ -187,6 +190,7 @@ function command.START_HOURGLASS(playerid,glassid,sandtype)
     hg.gold_loss = 0
     hg.gold_can_get = math.random(GOLD_LOWER_TBL[sandtype],GOLD_UPPER_TBL[sandtype])
     hg.unique_id = os.date("%Y-%m-%d %X")
+    hg.helped_id = {}
 
     add_to_working_table(hg)
 	return true
@@ -200,8 +204,14 @@ function command.HELP_FRIEND(playerid,targetid,glassid,unique_id)
 	elseif hg.unique_id ~= unique_id then
 		return false
 	else
-		hg.acc = hg.acc+HELP_ACC
+        for _,id in pairs(hg.helped_id) do
+        	if id == playerid then
+        		return false
+        	end
+        end
 
+		hg.acc = hg.acc+HELP_ACC
+        table.insert(hg.helped_id,playerid)
 		local res,agent = skynet.call("ONLINE_CENTER","lua","is_online",targetid)
 		if res then
 			pcall(skynet.call,agent,"lua","lab_friend_helped")
@@ -301,6 +311,7 @@ function command.HARVEST(playerid,glassid)
         hourglass.acc = 0
         hourglass.gold_can_get = 0
         hourglass.unique_id = ""
+        hourglass.helped_id = {}
         return true,gold
     else
     	return false
@@ -320,6 +331,7 @@ function command.QUICK_HARVEST(playerid,glassid)
 		hourglass.acc = 0 
 		hourglass.gold_can_get = 0
 		hourglass.unique_id = ""
+		hourglass.helped_id = {}
 		remove_from_working_table(hourglass)
 		return true,gold
 	else 

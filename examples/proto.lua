@@ -45,8 +45,7 @@ proto.c2s = sprotoparser.parse [[
 .soul {            #魂的信息
     soulid 0: integer      #魂的id(1~12)
     itemids 1: *integer    #魂的每个部位对应装备id
-    soul_girl_id 2 :integer  #魂的武器娘id
-    skill 3 : *skill # 技能 
+    soul_girl_id 2 :integer  #魂的武器娘id 
 }
 
 .fightdata {  #玩家战斗信息
@@ -92,6 +91,7 @@ proto.c2s = sprotoparser.parse [[
     gold_can_get 6 : integer
     acc 7 : integer
     unique_id 8 : string  
+    helped_id 9 : *integer
 }
 
 .labdata {

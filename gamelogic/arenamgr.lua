@@ -8,7 +8,7 @@ local arenamgr = {}
 function arenamgr:init(player)
     self.player = player
     statmgr = require "gamelogic.statmgr"
-    taskmgt = require "gamelogic.taskmgr"
+    taskmgr = require "gamelogic.taskmgr"
 end
 
 function arenamgr:get_player_arena_rank(arena_type)
@@ -76,25 +76,20 @@ function arenamgr:get_fight_data(arena_type)
 
     log ("rank"..player_rank)
     local ids
-    if player_rank > 10 then
-        log("rank"..math.floor(player_rank*0.9))
-        log("rank"..math.floor(player_rank*0.6))
-        log("rank"..math.floor(player_rank*0.3))
+    if player_rank >= 5 then
         ids = 
         { 
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.9)),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.6)),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.floor(player_rank*0.3)),
+
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.8),math.floor(player_rank*0.99))),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.6),math.floor(player_rank*0.79))),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.4),math.floor(player_rank*0.59))),
         }
-    elseif player_rank <= 10 and player_rank >=4 then
+    elseif player_rank < 5 then
         ids = {
-            player_rank - 1,
-            player_rank - 2,
-            player_rank - 3,
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",3),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",2),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",1),
         }
-    elseif player_rank <= 3 then
-        local i = player_rank-1
-        while i>0 do table.insert(ids,i) end
     end
 
     

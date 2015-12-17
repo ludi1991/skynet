@@ -51,10 +51,6 @@ function command.REGISTER(playerid)
     arena_1v1_index[playerid] = count_1v1+1
     arena_3v3[count_3v3+1] = playerid
     arena_3v3_index[playerid] = count_3v3+1
-    log("register"..count_1v1)
-    log("register"..count_3v3)
-    log(dump(arena_1v1,true))
-    log(dump(arena_1v1_index,true))
 end
 
 function command.GET_PLAYERID_BY_INDEX(index,arena_type)

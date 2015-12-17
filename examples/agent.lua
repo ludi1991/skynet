@@ -300,6 +300,8 @@ function REQUEST:set_player_soul()
 		player.souls[v.soulid] = v
 	end
 	set_sync_redis_flag()
+    taskmgr:update_tasks_by_condition_type(E_HAVE_SOULS)
+    taskmgr:update_tasks_by_condition_type(E_EQUIP_RESONANCES)
 	return { result = 1}
 end
 
@@ -315,7 +317,7 @@ function REQUEST:get_task_reward()
     local id = self.taskid
     if player.tasks[id] ~= nil then
     	taskmgr:finish_task(id)
-    	local gold,diamond,item = taskmgr:get_reward(id)
+    	local gold,diamond,items = taskmgr:get_reward(id)
     	if gold ~= nil then
     		add_gold(gold)
     	end
@@ -323,17 +325,20 @@ function REQUEST:get_task_reward()
     	if diamond ~= nil then
     		add_diamond(diamond)
     	end
+        
 
-        local items = nil
-    	if item ~= nil then
-    		local item = itemmgr:add_item(item.itemtype,item.itemcount)
-    		items = { item }
-    	end
+        local return_items = {}
+        if #items > 0 then
+            for _,item in items do
+                local theitem = itemmgr:add_item(item.itemtype,item.itemcount)
+                table.insert(return_items,theitem)
+            end
+        end
 
     	return {
             gold = gold,
             diamond = diamond,
-            items = items,
+            items = return_items,
         }
     else
     	log("no task!")
@@ -378,6 +383,7 @@ function REQUEST:upgrade_item()
         set_sync_redis_flag()
         statmgr:add_daily_stat("upgrade_equip")
         taskmgr:update_tasks_by_condition_type(E_UPGRADE_EQUIP)
+        taskmgr:update_tasks_by_condition_type(E_EQUIP_RESONANCES)
         return { result = 1 }
 	end
 
@@ -618,7 +624,7 @@ function REQUEST:upgrade_gem_all()
     end
 end
 
-function get_quick_pass_used_time()
+function REQUEST:get_quick_pass_used_time()
     local time = statmgr:get_daily_stat("quick_fight")
     return { times = time }
 end

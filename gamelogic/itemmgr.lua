@@ -50,6 +50,7 @@ function itemmgr:add_item(itemtype,count)
                 itemtype = itemtype,
                 itemcount = count,
         	}
+            taskmgr:update_tasks_by_condition_type(E_GEM_MAX_LEVEL)    
         	return items[itemtype]
         else
             items[itemtype].itemcount = items[itemtype].itemcount + count
@@ -114,6 +115,7 @@ function itemmgr:upgrade_gem(itemtype)
 
             statmgr:add_daily_stat("upgrade_gem")
             taskmgr:update_tasks_by_condition_type(E_UPGRADE_GEM)
+            taskmgr:update_tasks_by_condition_type(E_GEM_MAX_LEVEL)      
 			return true
 		else
 			return false
