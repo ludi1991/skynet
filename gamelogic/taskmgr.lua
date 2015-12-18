@@ -149,6 +149,7 @@ end
 
 -- get reward for a task
 function taskmgr:get_reward(taskid)
+    log("axibaaaaa" ..taskid)
 	local details = task_data[taskid]
     local drop = drop_data[details.drop]
     local items = {} 
