@@ -588,7 +588,7 @@ end
 
 function REQUEST:quick_pass_level()
     local times = statmgr:get_daily_stat("quick_fight")
-    if times < 3 then
+    if times < 55555 then
         if times >= 1 then
             if have_enough_diamond(20) then
                 add_diamond(-20)
