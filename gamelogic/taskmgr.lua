@@ -149,13 +149,12 @@ end
 
 -- get reward for a task
 function taskmgr:get_reward(taskid)
-    log("axibaaaaa" ..taskid)
 	local details = task_data[taskid]
     local drop = drop_data[details.drop]
     local items = {} 
     for i = 1,8 do
-        dropid = drop["dropid"..i]
-        dropnum = drop["dropnum"..i]
+        dropid = drop["drop_id"..i]
+        dropnum = drop["drop_num"..i]
         if dropid ~= nil and dropnum ~= nil then
             table.insert(items,{ itemtype = dropid, itemcount = dropnum } )   
         end

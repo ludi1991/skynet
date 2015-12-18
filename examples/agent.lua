@@ -332,7 +332,7 @@ function REQUEST:get_task_reward()
 
         local return_items = {}
         if #items > 0 then
-            for _,item in items do
+            for _,item in pairs(items) do
                 local theitem = itemmgr:add_item(item.itemtype,item.itemcount)
                 table.insert(return_items,theitem)
             end
