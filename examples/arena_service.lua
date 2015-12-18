@@ -44,7 +44,6 @@ local function is_locked(playerid,arena_type)
 end
 
 function command.REGISTER(playerid)
-    log ("helloworld")
     local count_1v1 = #arena_1v1
     local count_3v3 = #arena_3v3
     arena_1v1[count_1v1+1] = playerid
@@ -101,6 +100,14 @@ function command.FIGHT(playerid,enemyid,arena_type,result)
     unlock_player(playerid,arena_type)
     unlock_player(enemyid,arena_type)
     return true
+end
+
+function command.DUMP(arenatype)
+    if arenatype == 1 then
+        return { id_rank = arena_1v1_index , rank_id = arena_1v1 }
+    elseif arenatype == 2 then
+        return { id_rank = arena_3v3_index , rank_id = arena_3v3 }
+    end
 end
 
 

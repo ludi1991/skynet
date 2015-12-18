@@ -93,6 +93,7 @@ function itemmgr:have_item(itemid,count)
 end
 
 function itemmgr:have_item_by_itemtype(itemtype,count)
+    count = count or 1
     for i,v in pairs(self.items) do
         if v.itemtype == itemtype and v.itemcount >= count then
             return true

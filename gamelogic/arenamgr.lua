@@ -40,7 +40,7 @@ end
 
 function arenamgr:get_fight_data(arena_type)
     local skynet = skynet
-
+    log ("arena_type is".. arena_type)
     local function gen_fd(playerid)
         local v = playerid
         local data = skynet.call("DATA_CENTER","lua","get_player_data",v)
@@ -74,21 +74,19 @@ function arenamgr:get_fight_data(arena_type)
     local player_data = gen_fd(self.player.basic.playerid)
     local player_rank = skynet.call("ARENA_SERVICE","lua","get_index_by_playerid",self.player.basic.playerid,arena_type)
 
-    log ("rank"..player_rank)
     local ids
     if player_rank >= 5 then
         ids = 
         { 
-
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.8),math.floor(player_rank*0.99))),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.6),math.floor(player_rank*0.79))),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.4),math.floor(player_rank*0.59))),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.8),math.floor(player_rank*0.99)),arena_type),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.6),math.floor(player_rank*0.79)),arena_type),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",math.random(math.floor(player_rank*0.4),math.floor(player_rank*0.59)),arena_type),
         }
     elseif player_rank < 5 then
         ids = {
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",3),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",2),
-            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",1),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",3,arena_type),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",2,arena_type),
+            skynet.call("ARENA_SERVICE","lua","get_playerid_by_index",1,arena_type),
         }
     end
 

@@ -254,29 +254,32 @@ function REQUEST:get_server_time()
 end
 
 function REQUEST:pass_boss_level()
-    log("pass_boss_level"..dump(self.items))
-	add_gold(self.gold)
-	add_diamond(self.diamond)
+    if not itemmgr:have_item(1500001) then
+        log ("failed to pass level,not enough ticket")
+        return { result = 1 }
+    else
+    	add_gold(self.gold)
+    	add_diamond(self.diamond)
+        itemmgr:delete_item(1500001,1)
 
-    if self.items ~= nil then
-		for _,v in pairs(self.items) do
-			player.items[v.itemid] = v
-			--table.insert(player.items,v)
-		end
-	end
-	if player.basic.level == self.level then
-        player.basic.level = player.basic.level + 1
+        if self.items ~= nil then
+    		for _,v in pairs(self.items) do
+    			player.items[v.itemid] = v
+    			--table.insert(player.items,v)
+    		end
+    	end
+    	if player.basic.level == self.level then
+            player.basic.level = player.basic.level + 1
+        end
+        statmgr:add_stat("kill_boss")
+        statmgr:add_daily_stat("kill_boss")
+
+        taskmgr:update_tasks_by_condition_type(E_HAVE_GET_ENOUGH_LEVEL)
+        taskmgr:update_tasks_by_condition_type(E_KILL_BOSS)
+        taskmgr:update_tasks_by_condition_type(E_KILL_BOSS_TOTAL)
+        taskmgr:trigger_task_by_type(1)
+	    return { result = 1 }
     end
-    statmgr:add_stat("kill_boss")
-    statmgr:add_daily_stat("kill_boss")
-
-    taskmgr:update_tasks_by_condition_type(E_HAVE_GET_ENOUGH_LEVEL)
-    taskmgr:update_tasks_by_condition_type(E_KILL_BOSS)
-    taskmgr:update_tasks_by_condition_type(E_KILL_BOSS_TOTAL)
-    taskmgr:trigger_task_by_type(1)
-
-
-	return { result = 1 }
 end
 
 

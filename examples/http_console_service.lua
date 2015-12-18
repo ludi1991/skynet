@@ -31,6 +31,12 @@ function command.GET_PLAYER_DATA(playerid)
     end
 end
 
+function command.GET_ARENA_DATA(arena_type)
+    local arena_type = tonumber(arena_type)
+    local data = skynet.call("ARENA_SERVICE","lua","dump",arena_type)
+    return dump(data)
+end
+
 
 
 skynet.start(function()

@@ -400,23 +400,24 @@ local function robot_register()
 	end
 end
 
+-- robots will check their lab every 1 hour and may harvest and add new hourglass 
 local function robot_work()
     while true do
         for _,robotid in pairs(ROBOT_IDS) do	
         	for _,hg in pairs(lab_data[robotid].hourglass) do
-        		if hg.status == GLASS_EMPTY then
-        		    skynet.timeout(1000,function()
+        		if hg.status == GLASS_EMPTY then    
+        		    if math.random(2) == 1 then	
         				command.START_HOURGLASS(hg.playerid,hg.glassid,math.random(1,3))
-        			end)
+        			end
         		elseif hg.status == GLASS_FULL then
-        			skynet.timeout(1000,function()
+        			if math.random(2) == 1 then
         				command.HARVEST(hg.playerid,hg.glassid)
-        			end)
+        			end
         		end
         	end
         end
 
-    	skynet.sleep(100)
+    	skynet.sleep(6000*6000)
     end
 end
 
