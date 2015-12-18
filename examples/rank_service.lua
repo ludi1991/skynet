@@ -6,7 +6,7 @@ local command = {}
 local rank_single = {}
 local rank_team = {}
 
-local ROBOT_COUNT = 100
+local ROBOT_COUNT = 1000
 
 function command.REGISTER(playerid)
 end

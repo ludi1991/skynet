@@ -131,10 +131,6 @@ end
 --同步战斗数据到redis
 local function sync_fight_data_to_redis()
     if redis_need_sync then
-    	local single_fp = fp_cal:get_highest_fightpower(player)
-    	local team_fp = fp_cal:get_player_fightpower(player)
-    	ofp = fp_cal:get_1v1_fightpower(player)
-    	tfp = fp_cal:get_3v3_fightpower(player)
         for i,_ in pairs(player.souls) do
             local fp = fp_cal:get_soul_fightpower(player,i)
             statmgr:set_soul_fp(i,fp)
@@ -593,7 +589,7 @@ end
 function REQUEST:quick_pass_level()
     local times = statmgr:get_daily_stat("quick_fight")
     if times < 3 then
-        if times > 1 then
+        if times >= 1 then
             if have_enough_diamond(20) then
                 add_diamond(-20)
             else

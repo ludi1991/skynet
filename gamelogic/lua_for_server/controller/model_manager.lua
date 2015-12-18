@@ -23,7 +23,7 @@ function model_manager:generateCharacter(level, major, itemList, skillList)
     chara.intelligence = chara.intelligence + addtition_attributes.intelligence
 
     local damageAddFactorList = {chara.strength, chara.agility, chara.intelligence}
-    local curDamageAdd = damageAddFactorList[chara.major] * 20
+    local curDamageAdd = damageAddFactorList[(chara.major-1)%3+1] * 20
     local commonLvFac =  math.floor(200 * 1.25^(level / 2) * 0.2) 
     chara.critical = 0 * majorfacLi.t_cri + chara.agility * 10
     chara.toughness= 0 * majorfacLi.t_tough + chara.intelligence * 10

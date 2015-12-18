@@ -290,7 +290,7 @@ function command.STEAL(playerid,targetid,result)
 		pcall(skynet.call,agent,"lua","lab_stolen")
 	end
 
-    log(""..playerid.."success steal "..targetid)
+    log(""..playerid.."success steal "..targetid.."for "..gold_steal_total)
 
 	return true,gold_steal_total
 
