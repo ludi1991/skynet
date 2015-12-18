@@ -21,11 +21,13 @@ local fp_cal = require "gamelogic.fp_calculator"
 
 local function gen_robots(count)
     for i=1,count do
-        local level = math.floor((1000-i+1)/25+1)
-        local factor = 0.8-0.7*i/1000
+        local level = math.floor((1000-i+1)/25+5)
+        local factor = 0.8-0.8*i/1000
        -- local factor = 0.8
         robot_data[1000000+i] = npcgen:GenerateNpc(level,factor,1000000+i,"robot"..i)
 
+        local count = #robot_data[1000000+i].souls
+        robot_data[1000000+i].config.soulid_1v1 = math.random(count)
 
         robot_data[1000000+i].stat = {}
         robot_data[1000000+i].stat.fight_power = {}
@@ -37,172 +39,6 @@ local function gen_robots(count)
     end
 end
 
--- local function get_robot_data(playerid)
---     return robot_data[playerid]
---     local player = {}    
---     player.basic = {
---         playerid = playerid,
---         nickname = "robot"..playerid,
---         diamond = 0,
---         gold = 0,
---         create_time = os.date("%Y-%m-%d %X"),
---         level = 1,
---         last_login_time = os.date("%Y-%m-%d %X"),
---         cursoul = 1,
---         cur_stayin_level = 1,
---         head_sculpture = 1,
---     }
-
---     player.items = { 
---     [1] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010301,
---             ["itemextra"] = 107,
---             ["itemid"] = 1,
---         },
---         [2] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010201,
---             ["itemextra"] = 107,
---             ["itemid"] = 2,
---         },
---         [3] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010301,
---             ["itemextra"] = 106,
---             ["itemid"] = 3,
---         },
---         [4] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010301,
---             ["itemextra"] = 100,
---             ["itemid"] = 4,
---         },
---         [5] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010401,
---             ["itemextra"] = 105,
---             ["itemid"] = 5,
---         },
---         [6] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010501,
---             ["itemextra"] = 107,
---             ["itemid"] = 6,
---         },
---         [7] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2020101,
---             ["itemextra"] = 107,
---             ["itemid"] = 7,
---         },
---         [8] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010601,
---             ["itemextra"] = 101,
---             ["itemid"] = 8,
---         },
---         [9] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2020201,
---             ["itemextra"] = 102,
---             ["itemid"] = 9,
---         },
---         [10] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2020301,
---             ["itemextra"] = 104,
---             ["itemid"] = 10,
---         },
---         [11] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010701,
---             ["itemextra"] = 103,
---             ["itemid"] = 11,
---         },
---         [12] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2010801,
---             ["itemextra"] = 105,
---             ["itemid"] = 12,
---         },
---         [13] = {
---             ["itemcount"] = 1,
---             ["itemtype"] = 2020401,
---             ["itemextra"] = 100,
---             ["itemid"] = 13,
---         },
---     }
---     player.souls = { 
---         {   
---             soulid = 1 , 
---             itemids = { 1,2,-1,-1,-1,-1,-1,-1 } , 
---             soul_girl_id = 1
---         } , 
---         {   
---             soulid = 2, 
---             itemids = { 3,4,-1,-1,-1,-1,-1,-1} ,
---             soul_girl_id = 2
---         } ,
---         {
---             soulid = 3, 
---             itemids = { 5,6,-1,-1,-1,-1,-1,-1} ,
---             soul_girl_id = 3,
---         } ,
---         {
---             soulid = 4, 
---             itemids = { 7,-1,8,-1,9,-1,-1,-1} ,
---             soul_girl_id = 4,
---         }
---     }
-
-
---     player.tasks = { }
---     player.config =
---     {
---         soulid_1v1 = 1 ,
---         soulid_3v3 = { 1,2,4 } ,
---         finished_tasks = {} ,
---         guide_step = 0,
---         task_total_score = 0,
---     }
---     player.friend = {
---         905,904,903
---     }
---     player.stat = 
---     {
---         gold_consumed = 0 ,
---         diamond_consumed = 0 , 
---         melt_times = 0 ,
---         total_online_time = 0 ,
---         kill_boss = 0,
---         quick_fight = 0,
---         lab_harvest = 0,
---         lab_steal = 0,
---         lab_help = 0,
---         arena_single_times = 0,
---         arena_team_times = 0,
---         arena_single_victory = 0,
---         arena_team_victory = 0,
---         fight_power = { [1] = 77 , [2] = 25, [3] = 37,[4] = 55},
---         daily = {
---             strengthen_equip = 0,
---             upgrade_equip = 0,
---             inset_gem = 0,
---             upgrade_gem = 0,
---             arena_single_times = 0,
---             arena_team_times = 0,
---             arena_single_victory = 0,
---             arena_team_victory = 0,
---             lab_harvest = 0,
---             lab_steal = 0,
---             lab_help = 0,
---             kill_boss,
---             quick_fight = 0,
---         }
---     }
---     return player,4
--- end
 
 
 -- 1:from online player
