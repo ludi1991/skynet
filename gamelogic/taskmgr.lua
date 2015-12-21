@@ -2,6 +2,7 @@ local taskmgr = {}
 local skynet = require "skynet"
 local task_data = require "data.task_data"
 local drop_data = require "data.drop_data"
+
 local statmgr 
 local itemmgr
 
@@ -22,11 +23,11 @@ end
 function taskmgr:finish_task(taskid)
 	local player = self.player
 	if player.tasks and player.tasks[taskid] and player.tasks[taskid].percent == 100 then
-		player.tasks[taskid] = nil
+        self:delete_task(taskid)
 		self:add_to_finished_table(taskid)
 		 
         local detail = self:get_task_details(taskid)
-        player.config.task_total_score = player.config.task_total_score + detail.finish_per
+        statmgr:add_daily_stat("task_total_score",detail.finish_per)
         self:update_tasks_by_condition_type(E_HAVE_ENOUGH_DAILY_SCORE)
 
 		if detail.continue_task ~= nil  then
@@ -45,8 +46,18 @@ end
 function taskmgr:add_task(taskid)
 	local player = self.player
 	local percent = taskmgr:cal_task_percent(taskid)
-	self.player.tasks[taskid] = { taskid = taskid , percent = percent}
+	player.tasks[taskid] = { taskid = taskid , percent = percent}
 	--log (dump(player))
+end
+
+function taskmgr:delete_task(taskid)
+    local player = self.player
+    player.tasks[taskid] = nil
+end
+
+--这个任务是否在正在进行的任务列表中
+function taskmgr:have_task(taskid)
+    return self.player.tasks[taskid] ~= nil
 end
 
 -- 计算任务完成了多少
@@ -83,6 +94,7 @@ function taskmgr:update_task(taskid)
 	end 
 end
 
+-- 这个任务是否完成过！ 完成过！ 完成过！
 function taskmgr:have_finished_task(taskid)
     local player = self.player
     return player.config.finished_tasks[taskid] ~= nil
@@ -91,12 +103,12 @@ end
 
 function taskmgr:add_to_finished_table(taskid)
 	local player = self.player
-	if player and player.config then
-		if player.config.finished_tasks == nil then
-			player.config.finished_tasks = {}
-		end
-		player.config.finished_tasks[taskid] = true
-	end
+	player.config.finished_tasks[taskid] = true
+end
+
+function taskmgr:remove_from_finished_table(taskid)
+    local player = self.player
+    player.config.finished_tasks[taskid] = nil
 end
 
 function taskmgr:trigger_task(taskid)
@@ -196,6 +208,22 @@ function taskmgr:check_condition(type,...)
 end
 
 
+function taskmgr:daily_task_update()
+    local player = self.player
+    for id,task in pairs(task_data) do
+        if task.task_type == 2 then
+            if self:have_finished_task(id) then
+                self:remove_from_finished_table(id)
+            end
+            if self:have_task(id) then
+                self:delete_task(id)
+            end
+            self:trigger_task(id)
+        end
+    end
+end
+
+
 
 
 -----------------  条件检测
@@ -237,9 +265,9 @@ end
 
 
 function  taskmgr:have_enough_daily_score(score_need)
-    local score = math.floor(self.player.config.task_total_score/score_need*100)
+    local count = statmgr:get_daily_stat("task_total_score")
+    local score = math.floor(count/score_need*100)
     if score > 100 then score = 100 end
-    log (""..self.player.config.task_total_score.." "..score_need)
     return score==100,score
 end
 
@@ -455,6 +483,7 @@ function taskmgr:quick_fight_total(need)
     if score > 100 then score = 100 end
     return score == 100 ,score
 end
+
 
 
 

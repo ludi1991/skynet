@@ -69,3 +69,19 @@ function log(msg,level)
     end
     print (msg)
 end
+
+function parse_time(str)
+   -- local str = "1991-02-28 13:23:30"
+    local strsp = string.split(str," ")
+    local date,time = strsp[1],strsp[2]
+    local datesp = string.split(date,"-")
+    local timesp = string.split(time,":")
+    return  { 
+                year = tonumber(datesp[1]) ,
+                month = tonumber(datesp[2]) , 
+                day = tonumber(datesp[3]) ; 
+                hour = tonumber(timesp[1]), 
+                min = tonumber(timesp[2]) ,
+                sec = tonumber(timesp[3])
+            }
+end

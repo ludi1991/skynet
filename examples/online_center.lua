@@ -34,6 +34,16 @@ function command.IS_ONLINE(playerid)
     end
 end
 
+function command.SEND_TO_ONLINE_PLAYERS(command,...)
+	local cnt = 0
+	log("command is "..command)
+	for i,v in pairs(online_players) do
+		local res,data = pcall(skynet.call, v, "lua", command,...)
+	    cnt = cnt + 1
+	end
+	return cnt
+end
+
 
 skynet.start(function()
 	skynet.dispatch("lua", function(session, address, cmd, ...)

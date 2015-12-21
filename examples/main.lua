@@ -20,6 +20,7 @@ skynet.start(function()
 	skynet.newservice("http_console_service")
 	skynet.newservice("lab_service")
 	skynet.newservice("arena_service")
+	skynet.newservice("update_service")
 
 
 	local watchdog = skynet.newservice("watchdog")

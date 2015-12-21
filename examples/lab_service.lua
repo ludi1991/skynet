@@ -337,7 +337,6 @@ function command.QUICK_HARVEST(playerid,glassid)
 	else 
 		return false
     end
-
 end
 
 function command.GET_DATA(playerid)
@@ -351,6 +350,13 @@ function command.GET_DATA(playerid)
 	end
 end
 
+function command.GET_SANDTYPE(playerid,pos)
+    if lab_data[playerid] ~= nil then
+        return lab_data[playerid].hourglass[pos].sandtype
+    else
+        return -1
+    end
+end
 
 function command.SET_KEEPER(playerid,keeper)
     lab_data[playerid].keeper = keeper
@@ -367,6 +373,7 @@ function command.UNLOCK_HOURGLASS(playerid,glassid)
 		return false
 	end
 end
+
 
 local function update_working_glass()
 	while true do

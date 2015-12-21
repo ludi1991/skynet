@@ -37,6 +37,11 @@ function command.GET_ARENA_DATA(arena_type)
     return dump(data)
 end
 
+function command.DAILY_UPDATE()
+    log("heihei")
+    local count = skynet.call("UPDATE_SERVICE","lua","update")
+    return "ok ".. count .."player is updated"
+end
 
 
 skynet.start(function()

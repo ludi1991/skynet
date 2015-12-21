@@ -62,6 +62,26 @@ local function have_item(itemid)
 	return player.items ~= nil and player.items[itemid] ~= nil
 end
 
+
+local function need_update(lasttime,time_need)
+    local cur_time = os.time()
+    local last_login_time = os.time(parse_time(player.basic.last_login_time))
+    local curdate = os.date("*t")
+    local update_time = os.time { 
+        year = curdate.year, 
+        month = curdate.month, 
+        day = curdate.day ,
+        hour = 5 , 
+        min = 0 ,
+        sec = 0
+    }
+    if cur_time >= update_time and last_login_time < update_time then
+        return true
+    else
+        return false
+    end
+end
+
 -- 增加或减少金币
 local function add_gold(value)
 	if player.basic.gold + value < 0 then
@@ -213,6 +233,13 @@ function REQUEST:login()
     end)
 
     skynet.call("ONLINE_CENTER","lua","set_online",self.playerid,skynet.self())
+    
+    -- update data at 5 o'clock
+    if need_update() then
+        log("need daily update")
+        CMD.daily_update()
+    end
+
 	return { result = 1 }
 end
 
@@ -735,6 +762,11 @@ function CMD.get_data()
 	return player
 end
 
+function CMD.daily_update()
+    statmgr:reset_daily_stat()
+    taskmgr:daily_task_update()
+end
+
 function CMD.start(conf)
 	local fd = conf.client
 	local gate = conf.gate
@@ -780,4 +812,5 @@ skynet.start(function()
 		else
 		end
 	end)
+
 end)

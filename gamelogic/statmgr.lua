@@ -84,8 +84,13 @@ end
 
 function statmgr:add_daily_stat(stattype,value)
 	value = value or 1
-	log(stattype)
 	self.stat.daily[stattype] = self.stat.daily[stattype] + value
+end
+
+function statmgr:reset_daily_stat()
+	for i,_ in pairs(self.stat.daily) do
+        self.stat.daily[i] = 0
+    end
 end
 
 return statmgr

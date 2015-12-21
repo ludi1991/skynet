@@ -118,17 +118,25 @@ function labmgr:lab_set_keeper(keeperid)
 end
 
 function labmgr:lab_quick_harvest(glassid)
-	local res,gold = skynet.call("LAB_SERVICE","lua","quick_harvest",self.player.basic.playerid,glassid)
-	if res == true then
-		self.player.basic.gold = self.player.basic.gold + gold
-        statmgr:add_stat("lab_harvest")
-        statmgr:add_daily_stat("lab_harvest")
-        taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST)
-        taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST_TOTAL)
-		return { result = 1 , gold = gold }
-	else
-		return { result = 0, gold = 0}
-	end
+    local sandtype = skynet.call("LAB_SERVICE","lua","get_sandtype",self.player.basic.playerid,glassid)
+    local diamond_need = sandtype * 10
+    log ("sandtype"..sandtype)
+    if sandtype ~= -1 and self.player.basic.diamond < diamond_need then
+        return { result = 0, gold = 0}
+    else
+    	local res,gold = skynet.call("LAB_SERVICE","lua","quick_harvest",self.player.basic.playerid,glassid)
+    	if res == true then
+    		self.player.basic.gold = self.player.basic.gold + gold
+            self.player.basic.diamond = self.player.basic.diamond - diamond_need
+            statmgr:add_stat("lab_harvest")
+            statmgr:add_daily_stat("lab_harvest")
+            taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST)
+            taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST_TOTAL)
+    		return { result = 1 , gold = gold }
+    	else
+    		return { result = 0, gold = 0}
+    	end
+    end
 end
 
 function labmgr:lab_unlock_hourglass(glassid)
