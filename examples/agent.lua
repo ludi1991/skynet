@@ -257,7 +257,7 @@ function REQUEST:pass_boss_level()
     	add_gold(self.gold)
     	add_diamond(self.diamond)
         itemmgr:delete_item(1500001,1)
-
+        
         if self.items ~= nil then
     		for _,v in pairs(self.items) do
     			player.items[v.itemid] = v
@@ -282,7 +282,6 @@ end
 function REQUEST:pass_level()
 	add_gold(self.gold)
 	add_diamond(self.diamond)
-
     if self.items ~= nil then
 		for _,v in pairs(self.items) do
 			player.items[v.itemid] = v

@@ -141,7 +141,6 @@ function taskmgr:trigger_task_by_type(thetype)
 	local player = self.player
     for i,v in pairs(task_data) do
         if v.trigger_type == thetype then
-            log ("try trigger "..v.id)
             self:trigger_task(v.id)
         end
 	end
@@ -192,7 +191,7 @@ end
 
 
 function taskmgr:check_condition(type,...)
-	log ("taskmgr check_condition : "..type)
+	--log ("taskmgr check_condition : "..type)
     return self.condition_checker[type](self,...)
 end
 

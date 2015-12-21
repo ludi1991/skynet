@@ -407,17 +407,24 @@ local function robot_work()
         	for _,hg in pairs(lab_data[robotid].hourglass) do
         		if hg.status == GLASS_EMPTY then    
         		    if math.random(2) == 1 then	
-        				command.START_HOURGLASS(hg.playerid,hg.glassid,math.random(1,3))
-        			end
+                        local sandtype = math.random(1,3)
+        				command.START_HOURGLASS(hg.playerid,hg.glassid,sandtype)
+                        log("SUCCESS!robotid "..robotid.. "put "..sandtype.. "into glass "..hg.glassid)
+                    else
+                        log("FAILED!robotid "..robotid.. "put ".. "into glass "..hg.glassid)
+                    end
         		elseif hg.status == GLASS_FULL then
         			if math.random(2) == 1 then
         				command.HARVEST(hg.playerid,hg.glassid)
-        			end
+                        log("SUCCESS!robotid "..robotid.." harvest "..hg.glassid)
+        			else
+                        log("FAILED!robotid "..robotid.. "harvest "..hg.glassid)
+                    end
         		end
         	end
         end
 
-    	skynet.sleep(6000*6000)
+    	skynet.sleep(60*60 * 100)
     end
 end
 
