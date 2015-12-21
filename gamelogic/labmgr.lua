@@ -121,6 +121,10 @@ function labmgr:lab_quick_harvest(glassid)
 	local res,gold = skynet.call("LAB_SERVICE","lua","quick_harvest",self.player.basic.playerid,glassid)
 	if res == true then
 		self.player.basic.gold = self.player.basic.gold + gold
+        statmgr:add_stat("lab_harvest")
+        statmgr:add_daily_stat("lab_harvest")
+        taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST)
+        taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST_TOTAL)
 		return { result = 1 , gold = gold }
 	else
 		return { result = 0, gold = 0}
