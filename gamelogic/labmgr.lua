@@ -118,11 +118,9 @@ function labmgr:lab_set_keeper(keeperid)
 end
 
 function labmgr:lab_quick_harvest(glassid)
-    local sandtype = skynet.call("LAB_SERVICE","lua","get_sandtype",self.player.basic.playerid,glassid)
-    local diamond_need = sandtype * 10
-    log ("sandtype"..sandtype)
-    if sandtype ~= -1 and self.player.basic.diamond < diamond_need then
-        return { result = 0, gold = 0}
+    local res,diamond_need = skynet.call("LAB_SERVICE","lua","GET_QUICK_DIAMOND_NEED",self.player.basic.playerid,glassid)
+    if res and self.player.basic.diamond < diamond_need then
+        return { result = 0, gold = 0 }
     else
     	local res,gold = skynet.call("LAB_SERVICE","lua","quick_harvest",self.player.basic.playerid,glassid)
     	if res == true then
@@ -132,7 +130,7 @@ function labmgr:lab_quick_harvest(glassid)
             statmgr:add_daily_stat("lab_harvest")
             taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST)
             taskmgr:update_tasks_by_condition_type(E_LAB_HARVEST_TOTAL)
-    		return { result = 1 , gold = gold }
+    		return { result = 1 , gold = gold ,diamond_consumed = diamond_need}
     	else
     		return { result = 0, gold = 0}
     	end

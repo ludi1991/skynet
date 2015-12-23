@@ -350,13 +350,28 @@ function command.GET_DATA(playerid)
 	end
 end
 
-function command.GET_SANDTYPE(playerid,pos)
-    if lab_data[playerid] ~= nil then
-        return lab_data[playerid].hourglass[pos].sandtype
+function command.GET_QUICK_DIAMOND_NEED(playerid,pos)
+    local hg = lab_data[playerid].hourglass[pos]
+    if hg == nil then
+        return false,0
     else
-        return -1
+        local curtime = hg.curtime + hg.acc / 100 * TIME_TBL[hg.sandtype] 
+        local totaltime = TIME_TBL[hg.sandtype]
+        local time_need = totaltime - curtime
+        local diamond_need = math.ceil(time_need / 360)
+        log("quick_diamond_need "..diamond_need)
+        return true,diamond_need
     end
 end
+
+function command.GET_HOURGLASS(playerid,pos)
+    if lab_data[playerid] ~= nil then
+        return lab_data[playerid].hourglass[pos]
+    else
+        return nil
+    end
+end
+
 
 function command.SET_KEEPER(playerid,keeper)
     lab_data[playerid].keeper = keeper

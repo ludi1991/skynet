@@ -118,6 +118,7 @@ function command.CREATE_PLAYER(nickname)
         cursoul = 1,
         cur_stayin_level = 1,
         head_sculpture = 1,
+        vip = 0,
     }
 
     player.items = { 

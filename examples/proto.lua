@@ -588,6 +588,7 @@ lab_quick_harvest 49 {
     response {
         result 0 : integer #1success 0failed
         gold 1 : integer
+        diamond_consumed 2 : integer
     }
 }
 
@@ -690,6 +691,7 @@ get_quick_pass_used_time 61 {
         times 0: integer 
     }
 }
+
 
 
 

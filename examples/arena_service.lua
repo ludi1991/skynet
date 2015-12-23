@@ -114,10 +114,7 @@ end
 
 local function init_robot()
     for i=1,ROBOT_COUNT do
-        arena_1v1[i] = 1000000+i
-        arena_1v1_index[1000000+i] = i
-        arena_3v3[i] = 1000000+i
-        arena_3v3_index[1000000+i] = i
+        command.REGISTER(1000000+i)
     end
 end
 

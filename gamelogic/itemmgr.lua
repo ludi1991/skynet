@@ -145,12 +145,21 @@ function itemmgr:item_add_hole(itemid)
     	end
 
         local next_hole = 1
+
         while self.items[itemid].gem_id[next_hole] do
             next_hole = next_hole + 1
         end
-    	self.items[itemid].gem_id[next_hole] = -1
 
-        return true
+        local gold_cost = {3000,10000,30000,80000}
+        if self.player.basic.gold < gold_cost[next_hole] then
+            return false
+        else
+            self.player.basic.gold = self.player.basic.gold - gold_cost[next_hole]
+    	    self.items[itemid].gem_id[next_hole] = -1
+
+            return true
+        end
+
     else
     	return false
     end
