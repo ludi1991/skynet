@@ -176,6 +176,11 @@ function command.CREATE_PLAYER(nickname)
             task_total_score = 0,
         }
     }
+    player.shop = {
+        [E_SHOP_TYPE_HOT] = {},
+        [E_SHOP_TYPE_TIME_LIMIT] = {},
+        [E_SHOP_TYPE_VIP] = {}
+    }
 	return newplayerid,player
 end
 

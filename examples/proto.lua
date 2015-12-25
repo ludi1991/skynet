@@ -113,6 +113,15 @@ proto.c2s = sprotoparser.parse [[
     
 }
 
+.shopitem {
+    pos 0 : integer #栏位
+    itemtype 1 : integer #物品编号
+    item_number 2 : integer #物品单次购买的数量
+    have_bought 3 : integer #已购买次数
+    buy_limit 4 : integer #限制购买次数
+    is_recommend 5 : boolean #是否推荐
+    discount 6 : integer #折扣 1~100
+}
 
 handshake 1 {
     response {
@@ -692,6 +701,26 @@ get_quick_pass_used_time 61 {
     }
 }
 
+get_shop_data 62 {
+    request {
+        shoptype 0 : integer
+    }
+    response {
+        shopitems 0 : *shopitem(pos)
+        unique_id 1 : integer 
+    }
+}
+
+shop_buy 63 {
+    request {
+        shoptype 0 : integer
+        pos 1 : integer
+        unique_id 2 : integer
+    }
+    response {
+        result 0 : integer # 1-成功 2-商店已经刷新过 3-购买次数不足 4-货币不足
+    }
+}
 
 
 

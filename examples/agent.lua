@@ -11,6 +11,7 @@ local labmgr = require "gamelogic.labmgr"
 local friendmgr = require "gamelogic.friendmgr"
 local arenamgr = require "gamelogic.arenamgr"
 local rankmgr = require "gamelogic.rankmgr"
+local shopmgr = require "gamelogic.shopmgr"
 local fp_cal = require "gamelogic.fp_calculator"
 
 local WATCHDOG
@@ -218,7 +219,7 @@ function REQUEST:login()
     friendmgr:init(player)
     rankmgr:init(player)
     arenamgr:init(player)
-
+    shopmgr:init(player)
 
     skynet.fork(function()
         log("hello")
@@ -654,6 +655,14 @@ function REQUEST:get_quick_pass_used_time()
     return { times = time }
 end
 
+function REQUEST:get_shop_data()
+    local shopitems,unique_id = shopmgr:get_shop_data(self.shoptype)
+    return {shopitems = shopitems, unique_id = unique_id}
+end
+
+function REQUEST:shop_buy()
+    return {result = shopmgr:shop_buy(self.shoptype, self.pos, self.unique_id)}
+end
 
 --落地数据到数据库
 local function save_to_db()
@@ -672,9 +681,11 @@ function REQUEST:create_new_player()
     friendmgr:init(player)
     arenamgr:init(player)
     rankmgr:init(player)
+    shopmgr:init(player)
 
     taskmgr:trigger_task_by_type(0)
     labmgr:lab_register()
+    shopmgr:refresh(E_SHOP_TYPE_HOT)
     skynet.call("ARENA_SERVICE","lua","register",newplayerid)
 
     save_to_db()
@@ -814,3 +825,4 @@ skynet.start(function()
 	end)
 
 end)
+
